@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Blog Archive - Keep It Simple, Stupid</title>
+  <title>wiremock在maven环境下的应用 - Keep It Simple, Stupid</title>
   <meta name="author" content="samung">
 
   
-  <meta name="description" content="Blog Archive 2013 AngularJs的初次体验 Aug 14 2013 maven-release-plugin 实践 Jul 20 2013 posted in devops wiremock在maven环境下的应用 Jul 05 2013 posted in devops &hellip;">
+  <meta name="description" content="wiremock是什么 wiremock是一个用来做Web服务存根和mock的灵活工具库。与常用的mock工具不一样的是，wiremock通过创建一个真实的http服务，让你的代码在测试上可以连接到真正的Web服务 它支持HTTP响应存根,请求验证,代理/拦截,记录/回放的存根和故障注入, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yangtao309.github.io/blog/archives">
+  <link rel="canonical" href="http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Keep It Simple, Stupid" type="application/atom+xml">
@@ -66,74 +66,139 @@
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Blog Archive</h1>
+    
+      <h1 class="entry-title">Wiremock在maven环境下的应用</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-05T22:18:00+08:00" pubdate data-updated="true"></time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
     
   </header>
-  
-  <div id="blog-archives">
 
 
+<div class="entry-content"><h4>wiremock是什么</h4>
 
-  
-  <h2>2013</h2>
+<p><em>wiremock</em>是一个用来做Web服务存根和<em>mock</em>的灵活工具库。与常用的<em>mock</em>工具不一样的是，<em>wiremock</em>通过创建一个真实的http服务，让你的代码在测试上可以连接到真正的Web服务</p>
 
-<article>
-  
-<h1><a href="/blog/2013/08/14/angularjs-1th-taste/">AngularJs的初次体验</a></h1>
-<time datetime="2013-08-14T23:41:00+08:00" pubdate><span class='month'>Aug</span> <span class='day'>14</span> <span class='year'>2013</span></time>
+<p>它支持HTTP响应存根,请求验证,代理/拦截,记录/回放的存根和故障注入,可以从内部使用单元测试或部署到测试环境。</p>
 
+<p>尽管是用java编写的，有一套<em>Json api</em>可以与其他语言完美结合使用。</p>
 
-</article>
+<p>官方地址:<a href="http://wiremock.org/">http://wiremock.org/</a></p>
 
+<h4>解决了什么问题</h4>
 
+<p>在大前端的推动下，不少web系统采用前端和后端分离架构，前端只需要调用<em>restful</em>服务API即可拿到交互数据。在约定好api接口后，web开发团和API服务团队可以并行开发。
+可以让各司其职，各自处理自己擅长的部分，让事情做起来更高效。</p>
 
-<article>
-  
-<h1><a href="/blog/2013/07/20/maven-release-plugin-best-practice/">maven-release-plugin 实践</a></h1>
-<time datetime="2013-07-20T08:50:00+08:00" pubdate><span class='month'>Jul</span> <span class='day'>20</span> <span class='year'>2013</span></time>
+<h4>maven support</h4>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/devops/'>devops</a></span>
-</footer>
+<h6>1.    需要将前端代码独立成一个web maven项目。</h6>
 
+<p>需要按wiremock的方式放置文件目录:需要保包含<em>__files</em>和<em>mapping</em>目录。当<em>wiremock</em>以文件的方式进行独立运行时，
+需要将文件放置在<em>__files</em>目录下用来作为文档根目录。而<em>mapping</em>目录作为映射请求url的json数据存储目录以及定义url和json数据的映射关系。</p>
 
-</article>
+<p>目录组织方式如下图</p>
 
+<p><img src="/images/front_end_dir.jpg" width="350" height="350" title="image" alt="images"></p>
 
+<p>pom.xml的配置片段</p>
 
-<article>
-  
-<h1><a href="/blog/2013/07/05/wiremock-example-for-maven/">wiremock在maven环境下的应用</a></h1>
-<time datetime="2013-07-05T22:18:00+08:00" pubdate><span class='month'>Jul</span> <span class='day'>05</span> <span class='year'>2013</span></time>
+<p><img src="/images/front_pom.jpg" width="350" height="350" title="image" alt="images"></p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/devops/'>devops</a></span>
-</footer>
+<h6>2.    将整个应用程序集成的一个web maven项目。</h6>
 
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2013/07/02/octopress-in-github-pages/">Github上安装octopress博客</a></h1>
-<time datetime="2013-07-02T21:09:00+08:00" pubdate><span class='month'>Jul</span> <span class='day'>02</span> <span class='year'>2013</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>octopress</a></span>
-</footer>
-
-
-</article>
-
+<p><img src="/images/war_integration_pom.jpg" width="350" height="350" title="image" alt="images"></p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">samung</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-05T22:18:00+08:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/devops/'>devops</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+	<div class="bshare-custom">
+		<div class="bsPromo bsPromo1"></div>
+		<a title="分享到新浪微博" class="bshare-sinaminiblog"></a>
+		<a title="分享到QQ空间" class="bshare-qzone"></a>
+		<a title="分享到腾讯微博" class="bshare-qqmb"></a>
+		<a title="分享到人人网" class="bshare-renren"></a>
+		<a title="分享到网易微博" class="bshare-neteasemb"></a>
+		<a title="更多平台" class="bshare-more bshare-more-icon more-style-addthis"></a>
+		<span class="BSHARE_COUNT bshare-share-count">0</span>
+	</div>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/button.js#style=-1&amp;uuid=&amp;pophcol=2&amp;lang=zh"></script>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/bshareC0.js"></script>
+  
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/07/02/octopress-in-github-pages/" title="Previous Post: Github上安装octopress博客">&laquo; Github上安装octopress博客</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/07/20/maven-release-plugin-best-practice/" title="Next Post: maven-release-plugin 实践">maven-release-plugin 实践 &raquo;</a>
+      
+    </p>
+  </footer>
 </article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
 
 </div>
 
@@ -213,7 +278,10 @@
       var disqus_shortname = 'yangtao309';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven/';
+        var disqus_url = 'http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven/';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;

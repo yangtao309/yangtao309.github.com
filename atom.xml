@@ -4,13 +4,443 @@
   <title><![CDATA[Keep It Simple, Stupid]]></title>
   <link href="http://yangtao309.github.io/atom.xml" rel="self"/>
   <link href="http://yangtao309.github.io/"/>
-  <updated>2014-08-16T15:18:04+08:00</updated>
+  <updated>2014-08-16T15:59:17+08:00</updated>
   <id>http://yangtao309.github.io/</id>
   <author>
-    <name><![CDATA[samung88]]></name>
+    <name><![CDATA[samung]]></name>
     
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[AngularJs的初次体验]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/08/14/angularjs-1th-taste/"/>
+    <updated>2013-08-14T23:41:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/08/14/angularjs-1th-taste</id>
+    <content type="html"><![CDATA[<h6>用angularjs来实现个啥东西？</h6>
+
+<ul>
+<li>右边为列表的展示</li>
+<li>左边search栏为输入筛选的字段，对应的列表展示筛选的结果。</li>
+<li>左边Sort by 栏为选择排序值，对应的列表展示排序结果。</li>
+<li>Reverse Searchd的值是search input框值得逆序。（可以通过穿件directive或者filter）。</li>
+<li>点击莫个链接，改变hash值来切换模块，展现不同的页面。（利用n-view或者ng-include指令）。</li>
+</ul>
+
+
+<h6>需要用到的指令以及筛选filter</h6>
+
+<ol>
+<li>ng-app</li>
+<li>ng-repeat</li>
+<li>ng-model</li>
+<li>ng-view</li>
+<li>filter</li>
+<li>orderBy</li>
+<li>自定义指令ngreverse</li>
+</ol>
+
+
+<h6>代码示例</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>City:<span class="p">&lt;</span><span class="n">input</span> ng-model<span class="o">=</span><span class="s2">&quot;city&quot;</span><span class="n">/&gt;</span>
+</span><span class='line'>City reverse:<span class="p">&lt;</span><span class="n">span</span> ngreverse<span class="o">=</span><span class="s2">&quot;city&quot;</span> style<span class="o">=</span><span class="s2">&quot;color:red;&quot;</span>&gt;&lt;<span class="n">/span&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>appModule.directive(<span class="s1">&#39;ngreverse&#39;</span><span class="p">,</span> function() {
+</span><span class='line'>      return function(scope<span class="p">,</span> element<span class="p">,</span> attrs){
+</span><span class='line'>          scope.$watch(attrs.ngreverse<span class="p">,</span> function(value) {
+</span><span class='line'>              value <span class="o">=</span> value <span class="o">==</span> undefined ? <span class="s2">&quot;&quot;</span> : value;
+</span><span class='line'>              element.text(reverse(value));
+</span><span class='line'>          });
+</span><span class='line'>      };
+</span><span class='line'>  });
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>代码实现细节</h6>
+
+<ul>
+<li>$routeProvider</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>var appModule <span class="o">=</span> angular.module(<span class="s1">&#39;phonecat&#39;</span><span class="p">,</span> []);
+</span><span class='line'>appModule.config(
+</span><span class='line'>  [<span class="s1">&#39;$routeProvider&#39;</span><span class="p">,</span> function($routeProvider) {
+</span><span class='line'>      $routeProvider.when(<span class="s1">&#39;/&#39;</span><span class="p">,</span> {
+</span><span class='line'>          templateUrl: <span class="s1">&#39;phone-list.html&#39;</span><span class="p">,</span>
+</span><span class='line'>          controller: PhoneListCtrl
+</span><span class='line'>      }).when(<span class="s1">&#39;/:phoneId/:phoneAge&#39;</span><span class="p">,</span> {
+</span><span class='line'>          templateUrl: <span class="s1">&#39;phone-detail.html&#39;</span><span class="p">,</span>
+</span><span class='line'>          controller: PhoneDetailCtrl
+</span><span class='line'>      }).otherwise({redirectTo: <span class="s1">&#39;/&#39;</span>});
+</span><span class='line'>  }]);
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>实现效果</h6>
+
+<p><img src="http://yangtao309.github.io/images/qq-20130824094417.jpg" width="650" height="350" title="image" alt="images"></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Maven-release-plugin 实践]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/20/maven-release-plugin-best-practice/"/>
+    <updated>2013-07-20T08:50:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/20/maven-release-plugin-best-practice</id>
+    <content type="html"><![CDATA[<h4>maven-release-plugin简介</h4>
+
+<p>该插件是maven自带的用于发布项目之用，比如我们用SCM的svn来管理源代码，一般会分为trunk/branches/tags三个目录。
+trunk对应主线开发，一般对应的是SNAPSHOT版本，而branches可以是从trunk copy to的一个修复的小版本，也可以是从
+tags copy to的一个要修复的版本，同样对应的是SNAPSHOT版本。仅有tags下面的项目的版本号定义为release。
+至于maven下的release与snapshot的区别，不清楚的同学可以猛击:<a href="http://www.mzone.cc/article/277.html">http://www.mzone.cc/article/277.html</a></p>
+
+<p>官网地址: <a href="http://maven.apache.org/maven-release/maven-release-plugin/">http://maven.apache.org/maven-release/maven-release-plugin/</a></p>
+
+<h4>如何用好maven-release-plugin</h4>
+
+<p>在实际开发中，为了方便修复bug，以及准备测试程序包。按照规范流程都需要将开发程序打包成tag，然后将程序发布出去。
+那么我就经常需要从 1.0-SNAPSHOT到1.0到1.1-SNAPSHOT 这样的操作。对于项目个数比较少的情况，手动修改也未尝不可。
+对于比较复杂的系统，分成了大量的服务，业务模块的，少则7，8个多者20+个。笔者在实际应用中的就是包含有20多个工程。
+在没有应用release插件的时候，基本上负责发布的同学很头疼，也想办法用shell脚本去改pom的版本号。但是还是稍显麻烦。</p>
+
+<h4>1.0-SNAPSHOT到1.0到1.1-SNAPSHOT</h4>
+
+<p>SNAPSHOT是快照的意思，项目到一个阶段后，就需要发布一个正式的版本（release版本）。一次正式的发布需要这样一些工作：</p>
+
+<pre><code>在trunk中，更新pom版本从1.0-SNAPSHOT到1.0
+对1.0打一个svn tag
+针对tag进行mvn deploy，发布正式版本
+更新trunk从1.0到1.1-SNAPSHOT
+</code></pre>
+
+<h4>SCM</h4>
+
+<p>首先我们需要在POM中加入scm信息，这样Maven才能够替你完成svn操作，示例配置如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'><span class="p">&lt;</span><span class="n">scm</span>&gt;
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">connection</span><span class="p">&gt;</span><span class="n">scm</span><span class="nl">:svn:http</span>:<span class="n">//svn地址前缀部分/myapp/trunk/&lt;/connection&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">developerConnection</span><span class="p">&gt;</span><span class="n">scm</span><span class="nl">:svn:http</span>:<span class="n">//svn地址前缀部分/myapp/trunk/&lt;/developerConnection&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">url</span><span class="p">&gt;</span><span class="n">scm</span><span class="nl">:svn:http</span>:<span class="n">//svn地址前缀部分/myapp/trunk/&lt;/url&gt;</span>
+</span><span class='line'>&lt;<span class="n">/scm&gt;</span>
+</span><span class='line'>这样的配置是对应trunk下pom的配置，各个branches和tags都不一样，需要是其对于的svn地址
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>maven-release-plugin 应用配置</h4>
+
+<p>紧接着，我们需要配置maven-release-plugin，这个插件会帮助我们升级pom版本，提交，打tag，然后再升级版本，再提交，等等。配置如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'><span class="p">&lt;</span><span class="n">plugin</span>&gt;
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">groupId</span><span class="p">&gt;</span><span class="n">org</span>.apache.maven.plugins&lt;<span class="n">/groupId&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">artifactId</span><span class="p">&gt;</span><span class="n">maven</span>-release-plugin&lt;<span class="n">/artifactId&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">version</span><span class="p">&gt;</span><span class="n">2</span>.<span class="m">4</span>.<span class="m">1</span>&lt;<span class="n">/version&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">configuration</span>&gt;
+</span><span class='line'>      &lt;!-- mvn release:branch -DbranchName<span class="o">=</span>xxx -DupdateBranchVersions<span class="o">=</span>true
+</span><span class='line'>                      -DupdateWorkingCopyVersion<span class="o">=</span>false --&gt;
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">branchBase</span><span class="p">&gt;</span><span class="n">http</span>:<span class="n">//svn地址前缀部分/myapp/branches&lt;/branchBase&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">arguments</span>&gt;
+</span><span class='line'>          -Dmaven.test.skip<span class="o">=</span>true
+</span><span class='line'>      &lt;<span class="n">/arguments&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      &lt;!-- mvn release:perform -DautoVersionSubmodules<span class="o">=</span>true -DupdateWorkingCopyVersion<span class="o">=</span>false --&gt;
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">tagBase</span><span class="p">&gt;</span><span class="n">http</span>:<span class="n">//svn地址前缀部分/myapp/tags&lt;/tagBase&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">waitBeforeTagging</span><span class="p">&gt;</span><span class="n">10</span>&lt;<span class="n">/waitBeforeTagging&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">username</span>&gt;${svn.username}&lt;<span class="n">/username&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">password</span>&gt;${svn.password}&lt;<span class="n">/password&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">mavenHome</span>&gt;${svn.maven.home}&lt;<span class="n">/mavenHome&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">scmCommentPrefix</span><span class="p">&gt;</span>
+</span><span class='line'><span class="n">issue</span><span class="nl">:maven</span>-release-plugin
+</span><span class='line'>msg:excute maven-release-plugin
+</span><span class='line'>      &lt;<span class="n">/scmCommentPrefix&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">autoVersionSubmodules</span><span class="p">&gt;</span><span class="n">true</span>&lt;<span class="n">/autoVersionSubmodules&gt;</span>
+</span><span class='line'>  &lt;<span class="n">/configuration&gt;</span>
+</span><span class='line'>&lt;<span class="n">/plugin&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从上面的配置可以知道，需要配置svn提交的用户名和密码以及svn安装目录，还有就是svn提交的注释(可选)。
+另外在release插件打包发布到似有远程仓库的部分需要配置:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'><span class="p">&lt;</span><span class="n">distributionManagement</span>&gt;
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">repository</span>&gt;
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">id</span><span class="p">&gt;</span><span class="n">nexus</span>&lt;<span class="n">/id&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">name</span><span class="p">&gt;</span><span class="n">Nexus</span>&lt;<span class="n">/name&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">url</span><span class="p">&gt;</span><span class="n">http</span>:<span class="n">//ci仓库域名/nexus/content/repositories/releases&lt;/url&gt;</span>
+</span><span class='line'>  &lt;<span class="n">/repository&gt;</span>
+</span><span class='line'>  <span class="p">&lt;</span><span class="n">snapshotRepository</span>&gt;
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">id</span><span class="p">&gt;</span><span class="n">nexus</span>&lt;<span class="n">/id&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">name</span><span class="p">&gt;</span><span class="n">Nexus</span>&lt;<span class="n">/name&gt;</span>
+</span><span class='line'>      <span class="p">&lt;</span><span class="n">url</span><span class="p">&gt;</span><span class="n">http</span>:<span class="n">//ci仓库域名/nexus/content/repositories/snapshots&lt;/url&gt;</span>
+</span><span class='line'>  &lt;<span class="n">/snapshotRepository&gt;</span>
+</span><span class='line'>&lt;<span class="n">/distributionManagement&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>执行、操作 Action</h4>
+
+<h6>mvn release:prepare</h6>
+
+<blockquote><p>执行过程中，你会遇到这样的提示：</p>
+
+<p>What is the release version for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) 1.0: :</p>
+
+<p>——“你想将1.0-SNAPSHOT发布为什么版本？默认是1.0。”我要的就是1.0，直接回车。</p>
+
+<p>What is SCM release tag or label for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) myapp-1.0: :</p>
+
+<p>——“发布的tag标签名称是什么？默认为myapp-1.0。”我还是要默认值，直接回车。</p>
+
+<p>What is the new development version for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) 1.1-SNAPSHOT: :</p>
+
+<p>——“主干上新的版本是什么？默认为1.1-SNAPSHOT。”哈，release插件会自动帮我更新版本到1.1-SNAPSHOT，很好，直接回车。</p>
+
+<p>然后屏幕刷阿刷，maven在build我们的项目，并进行了一些svn操作，你可以仔细查看下日志。</p>
+
+<p>那么结果是什么呢？你可以浏览下svn仓库：</p>
+
+<p>   我们多了一个tag：<a href="https://svn-address.com/myapp/tags/myapp-1.0/">https://svn-address.com/myapp/tags/myapp-1.0/</a>  这就是需要发布的版本1.0。
+   再看看trunk中的POM，其版本自动升级成了1.1-SNAPSHOT。</p>
+
+<p>这不正是我们想要的么？等等，好像缺了点什么，对了，1.0还没有发布到仓库中呢。</p>
+
+<p>再一次屏住呼吸，执行：</p></blockquote>
+
+<h6>mvn release:perform</h6>
+
+<blockquote><p>maven-release-plugin会自动帮我们签出刚才打的tag，然后打包，分发到远程Maven仓库中，至此，整个版本的升级，打标签，发布等工作全部完成。我们可以在远程Maven仓库中看到正式发布的1.0版本。</p>
+
+<p>这可是自动化的 ，正式的 版本发布！</p></blockquote>
+
+<h4>注意点</h4>
+
+<p>svn client的版本号，1.6的版本执行的时候需要手动确认版本号， 1.7不需要。</p>
+
+<p>maven项目中的依赖其他的jar包，不能是SNAPSHOT版本的。(同时开发的项目可以用module的形式引入)。</p>
+
+<p>从trunk打branches、tags以及从tags打branches、或者从branches打tags以上命令都支持，一般执行release:perform都需要先执行release:prepare.</p>
+
+<p>修改trunk的版本号或者branches的版本号，可以用release:update-versions命令。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Wiremock在maven环境下的应用]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven/"/>
+    <updated>2013-07-05T22:18:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven</id>
+    <content type="html"><![CDATA[<h4>wiremock是什么</h4>
+
+<p><em>wiremock</em>是一个用来做Web服务存根和<em>mock</em>的灵活工具库。与常用的<em>mock</em>工具不一样的是，<em>wiremock</em>通过创建一个真实的http服务，让你的代码在测试上可以连接到真正的Web服务</p>
+
+<p>它支持HTTP响应存根,请求验证,代理/拦截,记录/回放的存根和故障注入,可以从内部使用单元测试或部署到测试环境。</p>
+
+<p>尽管是用java编写的，有一套<em>Json api</em>可以与其他语言完美结合使用。</p>
+
+<p>官方地址:<a href="http://wiremock.org/">http://wiremock.org/</a></p>
+
+<h4>解决了什么问题</h4>
+
+<p>在大前端的推动下，不少web系统采用前端和后端分离架构，前端只需要调用<em>restful</em>服务API即可拿到交互数据。在约定好api接口后，web开发团和API服务团队可以并行开发。
+可以让各司其职，各自处理自己擅长的部分，让事情做起来更高效。</p>
+
+<h4>maven support</h4>
+
+<h6>1.    需要将前端代码独立成一个web maven项目。</h6>
+
+<p>需要按wiremock的方式放置文件目录:需要保包含<em>__files</em>和<em>mapping</em>目录。当<em>wiremock</em>以文件的方式进行独立运行时，
+需要将文件放置在<em>__files</em>目录下用来作为文档根目录。而<em>mapping</em>目录作为映射请求url的json数据存储目录以及定义url和json数据的映射关系。</p>
+
+<p>目录组织方式如下图</p>
+
+<p><img src="http://yangtao309.github.io/images/front_end_dir.jpg" width="350" height="350" title="image" alt="images"></p>
+
+<p>pom.xml的配置片段</p>
+
+<p><img src="http://yangtao309.github.io/images/front_pom.jpg" width="350" height="350" title="image" alt="images"></p>
+
+<h6>2.    将整个应用程序集成的一个web maven项目。</h6>
+
+<p><img src="http://yangtao309.github.io/images/war_integration_pom.jpg" width="350" height="350" title="image" alt="images"></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Github上安装octopress博客]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/02/octopress-in-github-pages/"/>
+    <updated>2013-07-02T21:09:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/02/octopress-in-github-pages</id>
+    <content type="html"><![CDATA[<p>周末闲来无事，学习了一下怎样利用github pages来建立自己的博客，现在比较成熟的博客系统是Octopress，关于其详细的介绍可以参见官方文档。
+本文安装是基于window xp 32系统，参考地址:<a href="http://jinlong.github.io/blog/2013/03/15/deploy-github-pages-using-octopress-on-windows/">http://jinlong.github.io/blog/2013/03/15/deploy-github-pages-using-octopress-on-windows/</a></p>
+
+<ol>
+<li>已拥有github账号 没有的同学可以去 <a href="https://github.com">https://github.com</a> 上申请。</li>
+<li>需要在window机器上安装Git 安装好Git后，安装目录下提供了一个叫Git Bash的cmd工具</li>
+<li>安装ruby环境 rvm在window下没法安装，以及替代安装工具Pik的安装也需要依赖rubygems工具。所以最后选择RubyInstaller安装程序，一键安装。 安装好后，需要将其配置在环境变量->系统变量的Path中</li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>*.;C:\Ruby<span class="m">193</span>\bin;C:\Program Files\Git\bin;C:\Program Files\Git\cmd
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装DevKit，ruby的一个开发工具集
+更新配置 中文 utf-8 编码的支持，在win7环境变量中配置如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>LANG<span class="o">=</span>zh_CN.UTF<span class="m">-8</span>
+</span><span class='line'>LC_ALL<span class="o">=</span>zh_CN.UTF<span class="m">-8</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>变更 gem 的更新源，变更如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>gem sources --remove http:<span class="n">//rubygems.org/</span>
+</span><span class='line'>gem sources -a http:<span class="n">//ruby.taobao.org/</span>
+</span><span class='line'>gem sources -l
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进入Git Bash cmd，执行如下命令安装bundler</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>gem install bundler
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装Octopress 下载Octopress源代码</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>git clone git:<span class="n">//github.com/imathis/octopress.git</span> octopress
+</span><span class='line'><span class="k">cd</span> octopress # <span class="k">If</span> you use RVM<span class="p">,</span> You&#39;ll be asked <span class="k">if</span> you trust the .rvmrc file (say yes).
+</span><span class='line'>ruby --version # Should report Ruby <span class="m">1</span>.<span class="m">9</span>.<span class="m">2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装依赖模块</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'><span class="k">cd</span> octopress
+</span><span class='line'>vi GemFile
+</span><span class='line'>将行 ： source <span class="s2">&quot;http://rubygems.org/&quot;</span>
+</span><span class='line'>改为 ： source <span class="s2">&quot;http://ruby.taobao.org/&quot;</span>
+</span><span class='line'>$ bundle install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装默认主题</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>rake install
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>发布到github上</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>rake setup_github_pages # 会提示要输入对应的github地址，例如 https:<span class="n">//github.com/yangtao309/yangtao309.github.com.git</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>生成博客系统以及预览</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>rake generate # 生成文件
+</span><span class='line'>rake preview  # 预览系统，默认访问地址 http:<span class="n">//127.0.0.1:4000</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后就是提交代码到github</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>rake deploy # 会提示输入github的账号和密码信息
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>简单的octopress搭建就算完成了。后面就是些blog内容和安装分享插件bshare和微博右侧栏、以及新的主题替换啦。</p>
+]]></content>
+  </entry>
   
 </feed>

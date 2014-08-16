@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>AngularJs的初次体验 - Keep It Simple, Stupid</title>
+  <meta name="author" content="samung">
+
+  
+  <meta name="description" content="用angularjs来实现个啥东西？ 右边为列表的展示
+左边search栏为输入筛选的字段，对应的列表展示筛选的结果。
+左边Sort by 栏为选择排序值，对应的列表展示排序结果。
+Reverse Searchd的值是search input框值得逆序。（ &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yangtao309.github.io/blog/2013/08/14/angularjs-1th-taste">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Keep It Simple, Stupid" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Keep It Simple, Stupid</a></h1>
+  
+    <h2>简单 快乐 追求</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:yangtao309.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/blog/categories">Categories</a></li>
+  <li><a href="/blog/about">About Me</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">AngularJs的初次体验</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-14T23:41:00+08:00" pubdate data-updated="true"></time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h6>用angularjs来实现个啥东西？</h6>
+
+<ul>
+<li>右边为列表的展示</li>
+<li>左边search栏为输入筛选的字段，对应的列表展示筛选的结果。</li>
+<li>左边Sort by 栏为选择排序值，对应的列表展示排序结果。</li>
+<li>Reverse Searchd的值是search input框值得逆序。（可以通过穿件directive或者filter）。</li>
+<li>点击莫个链接，改变hash值来切换模块，展现不同的页面。（利用n-view或者ng-include指令）。</li>
+</ul>
+
+
+<h6>需要用到的指令以及筛选filter</h6>
+
+<ol>
+<li>ng-app</li>
+<li>ng-repeat</li>
+<li>ng-model</li>
+<li>ng-view</li>
+<li>filter</li>
+<li>orderBy</li>
+<li>自定义指令ngreverse</li>
+</ol>
+
+
+<h6>代码示例</h6>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>City:<span class="p">&lt;</span><span class="n">input</span> ng-model<span class="o">=</span><span class="s2">&quot;city&quot;</span><span class="n">/&gt;</span>
+</span><span class='line'>City reverse:<span class="p">&lt;</span><span class="n">span</span> ngreverse<span class="o">=</span><span class="s2">&quot;city&quot;</span> style<span class="o">=</span><span class="s2">&quot;color:red;&quot;</span>&gt;&lt;<span class="n">/span&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>appModule.directive(<span class="s1">&#39;ngreverse&#39;</span><span class="p">,</span> function() {
+</span><span class='line'>      return function(scope<span class="p">,</span> element<span class="p">,</span> attrs){
+</span><span class='line'>          scope.$watch(attrs.ngreverse<span class="p">,</span> function(value) {
+</span><span class='line'>              value <span class="o">=</span> value <span class="o">==</span> undefined ? <span class="s2">&quot;&quot;</span> : value;
+</span><span class='line'>              element.text(reverse(value));
+</span><span class='line'>          });
+</span><span class='line'>      };
+</span><span class='line'>  });
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<h6>代码实现细节</h6>
+
+<ul>
+<li>$routeProvider</li>
+</ul>
+
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'>var appModule <span class="o">=</span> angular.module(<span class="s1">&#39;phonecat&#39;</span><span class="p">,</span> []);
+</span><span class='line'>appModule.config(
+</span><span class='line'>  [<span class="s1">&#39;$routeProvider&#39;</span><span class="p">,</span> function($routeProvider) {
+</span><span class='line'>      $routeProvider.when(<span class="s1">&#39;/&#39;</span><span class="p">,</span> {
+</span><span class='line'>          templateUrl: <span class="s1">&#39;phone-list.html&#39;</span><span class="p">,</span>
+</span><span class='line'>          controller: PhoneListCtrl
+</span><span class='line'>      }).when(<span class="s1">&#39;/:phoneId/:phoneAge&#39;</span><span class="p">,</span> {
+</span><span class='line'>          templateUrl: <span class="s1">&#39;phone-detail.html&#39;</span><span class="p">,</span>
+</span><span class='line'>          controller: PhoneDetailCtrl
+</span><span class='line'>      }).otherwise({redirectTo: <span class="s1">&#39;/&#39;</span>});
+</span><span class='line'>  }]);
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<h6>实现效果</h6>
+
+<p><img src="/images/qq-20130824094417.jpg" width="650" height="350" title="image" alt="images"></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">samung</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-14T23:41:00+08:00" pubdate data-updated="true"></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+	<div class="bshare-custom">
+		<div class="bsPromo bsPromo1"></div>
+		<a title="分享到新浪微博" class="bshare-sinaminiblog"></a>
+		<a title="分享到QQ空间" class="bshare-qzone"></a>
+		<a title="分享到腾讯微博" class="bshare-qqmb"></a>
+		<a title="分享到人人网" class="bshare-renren"></a>
+		<a title="分享到网易微博" class="bshare-neteasemb"></a>
+		<a title="更多平台" class="bshare-more bshare-more-icon more-style-addthis"></a>
+		<span class="BSHARE_COUNT bshare-share-count">0</span>
+	</div>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/button.js#style=-1&amp;uuid=&amp;pophcol=2&amp;lang=zh"></script>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/bshareC0.js"></script>
+  
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/07/20/maven-release-plugin-best-practice/" title="Previous Post: maven-release-plugin 实践">&laquo; maven-release-plugin 实践</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/08/14/angularjs-1th-taste/">AngularJs的初次体验</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/07/20/maven-release-plugin-best-practice/">Maven-release-plugin 实践</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/07/05/wiremock-example-for-maven/">Wiremock在maven环境下的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/07/02/octopress-in-github-pages/">Github上安装octopress博客</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/yangtao309">@yangtao309</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'yangtao309',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+<section>	<h1>新浪微博</h1>	<ul id="weibo">		<li>			<iframe 				width="100%" 				height="550" 				class="share_self"  				frameborder="0" 				scrolling="no" 				src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=0&noborder=0&isWeibo=1&isFans=1&uid=1692592813&verifier=b001128f&dpc=1"></iframe>		</li>	</ul></section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - samung -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'yangtao309';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://yangtao309.github.io/blog/2013/08/14/angularjs-1th-taste/';
+        var disqus_url = 'http://yangtao309.github.io/blog/2013/08/14/angularjs-1th-taste/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

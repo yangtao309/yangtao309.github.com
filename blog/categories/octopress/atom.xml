@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: octopress | Keep It Simple, Stupid]]></title>
+  <link href="http://yangtao309.github.io/blog/categories/octopress/atom.xml" rel="self"/>
+  <link href="http://yangtao309.github.io/"/>
+  <updated>2014-08-16T15:59:17+08:00</updated>
+  <id>http://yangtao309.github.io/</id>
+  <author>
+    <name><![CDATA[samung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Github上安装octopress博客]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/02/octopress-in-github-pages/"/>
+    <updated>2013-07-02T21:09:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/02/octopress-in-github-pages</id>
+    <content type="html"><![CDATA[<p>周末闲来无事，学习了一下怎样利用github pages来建立自己的博客，现在比较成熟的博客系统是Octopress，关于其详细的介绍可以参见官方文档。
+本文安装是基于window xp 32系统，参考地址:<a href="http://jinlong.github.io/blog/2013/03/15/deploy-github-pages-using-octopress-on-windows/">http://jinlong.github.io/blog/2013/03/15/deploy-github-pages-using-octopress-on-windows/</a></p>
+
+<ol>
+<li>已拥有github账号 没有的同学可以去 <a href="https://github.com">https://github.com</a> 上申请。</li>
+<li>需要在window机器上安装Git 安装好Git后，安装目录下提供了一个叫Git Bash的cmd工具</li>
+<li>安装ruby环境 rvm在window下没法安装，以及替代安装工具Pik的安装也需要依赖rubygems工具。所以最后选择RubyInstaller安装程序，一键安装。 安装好后，需要将其配置在环境变量->系统变量的Path中</li>
+</ol>
+
+
+<pre><code class="bat">*.;C:\Ruby193\bin;C:\Program Files\Git\bin;C:\Program Files\Git\cmd
+</code></pre>
+
+<p>安装DevKit，ruby的一个开发工具集
+更新配置 中文 utf-8 编码的支持，在win7环境变量中配置如下：</p>
+
+<pre><code class="bat">LANG=zh_CN.UTF-8
+LC_ALL=zh_CN.UTF-8
+</code></pre>
+
+<p>变更 gem 的更新源，变更如下：</p>
+
+<pre><code class="bat">gem sources --remove http://rubygems.org/
+gem sources -a http://ruby.taobao.org/
+gem sources -l
+</code></pre>
+
+<p>进入Git Bash cmd，执行如下命令安装bundler</p>
+
+<pre><code class="bat">gem install bundler
+</code></pre>
+
+<p>安装Octopress 下载Octopress源代码</p>
+
+<pre><code class="bat">git clone git://github.com/imathis/octopress.git octopress
+cd octopress # If you use RVM, You'll be asked if you trust the .rvmrc file (say yes).
+ruby --version # Should report Ruby 1.9.2
+</code></pre>
+
+<p>安装依赖模块</p>
+
+<pre><code class="bat">cd octopress
+vi GemFile
+将行 ： source "http://rubygems.org/"
+改为 ： source "http://ruby.taobao.org/"
+$ bundle install
+</code></pre>
+
+<p>安装默认主题</p>
+
+<pre><code class="bat">rake install
+</code></pre>
+
+<p>发布到github上
+<code>bat
+rake setup_github_pages # 会提示要输入对应的github地址，例如 https://github.com/yangtao309/yangtao309.github.com.git
+</code></p>
+
+<p>生成博客系统以及预览
+<code>bat
+rake generate   # 生成文件
+rake preview  # 预览系统，默认访问地址 http://127.0.0.1:4000
+</code></p>
+
+<p>最后就是提交代码到github
+<code>bat
+rake deploy # 会提示输入github的账号和密码信息
+</code></p>
+
+<p>简单的octopress搭建就算完成了。后面就是些blog内容和安装分享插件bshare和微博右侧栏、以及新的主题替换啦。</p>
+]]></content>
+  </entry>
+  
+</feed>

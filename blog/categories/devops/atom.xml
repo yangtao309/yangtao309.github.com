@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: devops | Keep It Simple, Stupid]]></title>
+  <link href="http://yangtao309.github.io/blog/categories/devops/atom.xml" rel="self"/>
+  <link href="http://yangtao309.github.io/"/>
+  <updated>2014-08-16T15:59:17+08:00</updated>
+  <id>http://yangtao309.github.io/</id>
+  <author>
+    <name><![CDATA[samung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[maven-release-plugin 实践]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/20/maven-release-plugin-best-practice/"/>
+    <updated>2013-07-20T08:50:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/20/maven-release-plugin-best-practice</id>
+    <content type="html"><![CDATA[<h4>maven-release-plugin简介</h4>
+
+<p>该插件是maven自带的用于发布项目之用，比如我们用SCM的svn来管理源代码，一般会分为trunk/branches/tags三个目录。
+trunk对应主线开发，一般对应的是SNAPSHOT版本，而branches可以是从trunk copy to的一个修复的小版本，也可以是从
+tags copy to的一个要修复的版本，同样对应的是SNAPSHOT版本。仅有tags下面的项目的版本号定义为release。
+至于maven下的release与snapshot的区别，不清楚的同学可以猛击:<a href="http://www.mzone.cc/article/277.html">http://www.mzone.cc/article/277.html</a></p>
+
+<p>官网地址: <a href="http://maven.apache.org/maven-release/maven-release-plugin/">http://maven.apache.org/maven-release/maven-release-plugin/</a></p>
+
+<h4>如何用好maven-release-plugin</h4>
+
+<p>在实际开发中，为了方便修复bug，以及准备测试程序包。按照规范流程都需要将开发程序打包成tag，然后将程序发布出去。
+那么我就经常需要从 1.0-SNAPSHOT到1.0到1.1-SNAPSHOT 这样的操作。对于项目个数比较少的情况，手动修改也未尝不可。
+对于比较复杂的系统，分成了大量的服务，业务模块的，少则7，8个多者20+个。笔者在实际应用中的就是包含有20多个工程。
+在没有应用release插件的时候，基本上负责发布的同学很头疼，也想办法用shell脚本去改pom的版本号。但是还是稍显麻烦。</p>
+
+<h4>1.0-SNAPSHOT到1.0到1.1-SNAPSHOT</h4>
+
+<p>SNAPSHOT是快照的意思，项目到一个阶段后，就需要发布一个正式的版本（release版本）。一次正式的发布需要这样一些工作：</p>
+
+<pre><code>在trunk中，更新pom版本从1.0-SNAPSHOT到1.0
+对1.0打一个svn tag
+针对tag进行mvn deploy，发布正式版本
+更新trunk从1.0到1.1-SNAPSHOT
+</code></pre>
+
+<h4>SCM</h4>
+
+<p>首先我们需要在POM中加入scm信息，这样Maven才能够替你完成svn操作，示例配置如下：</p>
+
+<pre><code class="bat">&lt;scm&gt;  
+  &lt;connection&gt;scm:svn:http://svn地址前缀部分/myapp/trunk/&lt;/connection&gt;  
+  &lt;developerConnection&gt;scm:svn:http://svn地址前缀部分/myapp/trunk/&lt;/developerConnection&gt;  
+  &lt;url&gt;scm:svn:http://svn地址前缀部分/myapp/trunk/&lt;/url&gt;
+&lt;/scm&gt;  
+这样的配置是对应trunk下pom的配置，各个branches和tags都不一样，需要是其对于的svn地址
+</code></pre>
+
+<h4>maven-release-plugin 应用配置</h4>
+
+<p>紧接着，我们需要配置maven-release-plugin，这个插件会帮助我们升级pom版本，提交，打tag，然后再升级版本，再提交，等等。配置如下：</p>
+
+<pre><code class="bat">&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-release-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.4.1&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;!-- mvn release:branch -DbranchName=xxx -DupdateBranchVersions=true
+                        -DupdateWorkingCopyVersion=false --&gt;
+        &lt;branchBase&gt;http://svn地址前缀部分/myapp/branches&lt;/branchBase&gt;
+        &lt;arguments&gt;
+            -Dmaven.test.skip=true 
+        &lt;/arguments&gt;
+
+        &lt;!-- mvn release:perform -DautoVersionSubmodules=true -DupdateWorkingCopyVersion=false --&gt;
+        &lt;tagBase&gt;http://svn地址前缀部分/myapp/tags&lt;/tagBase&gt;
+        &lt;waitBeforeTagging&gt;10&lt;/waitBeforeTagging&gt;
+        &lt;username&gt;${svn.username}&lt;/username&gt;
+        &lt;password&gt;${svn.password}&lt;/password&gt;
+        &lt;mavenHome&gt;${svn.maven.home}&lt;/mavenHome&gt;
+        &lt;scmCommentPrefix&gt;
+issue:maven-release-plugin
+msg:excute maven-release-plugin
+        &lt;/scmCommentPrefix&gt;
+        &lt;autoVersionSubmodules&gt;true&lt;/autoVersionSubmodules&gt;
+    &lt;/configuration&gt;
+&lt;/plugin&gt;
+</code></pre>
+
+<p>从上面的配置可以知道，需要配置svn提交的用户名和密码以及svn安装目录，还有就是svn提交的注释(可选)。
+另外在release插件打包发布到似有远程仓库的部分需要配置:</p>
+
+<pre><code class="bat">&lt;distributionManagement&gt;
+    &lt;repository&gt;
+        &lt;id&gt;nexus&lt;/id&gt;
+        &lt;name&gt;Nexus&lt;/name&gt;
+        &lt;url&gt;http://ci仓库域名/nexus/content/repositories/releases&lt;/url&gt;
+    &lt;/repository&gt;
+    &lt;snapshotRepository&gt;
+        &lt;id&gt;nexus&lt;/id&gt;
+        &lt;name&gt;Nexus&lt;/name&gt;
+        &lt;url&gt;http://ci仓库域名/nexus/content/repositories/snapshots&lt;/url&gt;
+    &lt;/snapshotRepository&gt;
+&lt;/distributionManagement&gt;
+</code></pre>
+
+<h4>执行、操作 Action</h4>
+
+<h6>mvn release:prepare</h6>
+
+<blockquote><p>执行过程中，你会遇到这样的提示：</p>
+
+<p>What is the release version for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) 1.0: :</p>
+
+<p>——“你想将1.0-SNAPSHOT发布为什么版本？默认是1.0。”我要的就是1.0，直接回车。</p>
+
+<p>What is SCM release tag or label for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) myapp-1.0: :</p>
+
+<p>——“发布的tag标签名称是什么？默认为myapp-1.0。”我还是要默认值，直接回车。</p>
+
+<p>What is the new development version for &ldquo;Unnamed - org.myorg:myapp:jar:1.0-SNAPSHOT&rdquo;? (org.myorg:myapp) 1.1-SNAPSHOT: :</p>
+
+<p>——“主干上新的版本是什么？默认为1.1-SNAPSHOT。”哈，release插件会自动帮我更新版本到1.1-SNAPSHOT，很好，直接回车。</p>
+
+<p>然后屏幕刷阿刷，maven在build我们的项目，并进行了一些svn操作，你可以仔细查看下日志。</p>
+
+<p>那么结果是什么呢？你可以浏览下svn仓库：</p>
+
+<p>   我们多了一个tag：<a href="https://svn-address.com/myapp/tags/myapp-1.0/">https://svn-address.com/myapp/tags/myapp-1.0/</a>  这就是需要发布的版本1.0。
+   再看看trunk中的POM，其版本自动升级成了1.1-SNAPSHOT。</p>
+
+<p>这不正是我们想要的么？等等，好像缺了点什么，对了，1.0还没有发布到仓库中呢。</p>
+
+<p>再一次屏住呼吸，执行：</p></blockquote>
+
+<h6>mvn release:perform</h6>
+
+<blockquote><p>maven-release-plugin会自动帮我们签出刚才打的tag，然后打包，分发到远程Maven仓库中，至此，整个版本的升级，打标签，发布等工作全部完成。我们可以在远程Maven仓库中看到正式发布的1.0版本。</p>
+
+<p>这可是自动化的 ，正式的 版本发布！</p></blockquote>
+
+<h4>注意点</h4>
+
+<p>svn client的版本号，1.6的版本执行的时候需要手动确认版本号， 1.7不需要。</p>
+
+<p>maven项目中的依赖其他的jar包，不能是SNAPSHOT版本的。(同时开发的项目可以用module的形式引入)。</p>
+
+<p>从trunk打branches、tags以及从tags打branches、或者从branches打tags以上命令都支持，一般执行release:perform都需要先执行release:prepare.</p>
+
+<p>修改trunk的版本号或者branches的版本号，可以用release:update-versions命令。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[wiremock在maven环境下的应用]]></title>
+    <link href="http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven/"/>
+    <updated>2013-07-05T22:18:00+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2013/07/05/wiremock-example-for-maven</id>
+    <content type="html"><![CDATA[<h4>wiremock是什么</h4>
+
+<p><em>wiremock</em>是一个用来做Web服务存根和<em>mock</em>的灵活工具库。与常用的<em>mock</em>工具不一样的是，<em>wiremock</em>通过创建一个真实的http服务，让你的代码在测试上可以连接到真正的Web服务</p>
+
+<p>它支持HTTP响应存根,请求验证,代理/拦截,记录/回放的存根和故障注入,可以从内部使用单元测试或部署到测试环境。</p>
+
+<p>尽管是用java编写的，有一套<em>Json api</em>可以与其他语言完美结合使用。</p>
+
+<p>官方地址:<a href="http://wiremock.org/">http://wiremock.org/</a></p>
+
+<h4>解决了什么问题</h4>
+
+<p>在大前端的推动下，不少web系统采用前端和后端分离架构，前端只需要调用<em>restful</em>服务API即可拿到交互数据。在约定好api接口后，web开发团和API服务团队可以并行开发。
+可以让各司其职，各自处理自己擅长的部分，让事情做起来更高效。</p>
+
+<h4>maven support</h4>
+
+<h6>1.    需要将前端代码独立成一个web maven项目。</h6>
+
+<p>需要按wiremock的方式放置文件目录:需要保包含<em>__files</em>和<em>mapping</em>目录。当<em>wiremock</em>以文件的方式进行独立运行时，
+需要将文件放置在<em>__files</em>目录下用来作为文档根目录。而<em>mapping</em>目录作为映射请求url的json数据存储目录以及定义url和json数据的映射关系。</p>
+
+<p>目录组织方式如下图</p>
+
+<p><img src="/images/front_end_dir.jpg" width="350" height="350" title="&lsquo;image&rsquo; &lsquo;images&rsquo;" ></p>
+
+<p>pom.xml的配置片段</p>
+
+<p><img src="/images/front_pom.jpg" width="350" height="350" title="&lsquo;image&rsquo; &lsquo;images&rsquo;" ></p>
+
+<h6>2.    将整个应用程序集成的一个web maven项目。</h6>
+
+<p><img src="/images/war_integration_pom.jpg" width="350" height="350" title="&lsquo;image&rsquo; &lsquo;images&rsquo;" ></p>
+]]></content>
+  </entry>
+  
+</feed>
