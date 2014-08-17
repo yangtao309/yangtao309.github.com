@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: jvm | Keep It Simple, Stupid]]></title>
+  <link href="http://yangtao309.github.io/blog/categories/jvm/atom.xml" rel="self"/>
+  <link href="http://yangtao309.github.io/"/>
+  <updated>2014-08-17T19:00:17+08:00</updated>
+  <id>http://yangtao309.github.io/</id>
+  <author>
+    <name><![CDATA[samung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[How to Analyze Java Thread Dumps]]></title>
+    <link href="http://yangtao309.github.io/blog/2014/08/17/how-to-analyze-java-thread-dumps/"/>
+    <updated>2014-08-17T17:18:05+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2014/08/17/how-to-analyze-java-thread-dumps</id>
+    <content type="html"><![CDATA[<p>The content of this article was originally written by Tae Jin Gu on the <a href="http://www.cubrid.org/blog/dev-platform/how-to-analyze-java-thread-dumps/">Cubrid blog</a>.</p>
+
+<p>该文来源于Cubrid blog(不过源地址已没有相关内容，本文翻译系转载)</p>
+
+<p>When there is an obstacle, or when a Java based Web application is running much slower than expected, we need to use <strong>thread dumps</strong>. If <strong>thread dumps</strong> feel like very complicated to you, this article may help you very much. Here I will explain what threads are in Java, their types, how they are created, how to manage them, how you can dump threads from a running application, and finally how you can analyze them and determine the bottleneck or blocking threads. This article is a result of long experience in Java application debugging.</p>
+
+<p>当Java程序遇到了麻烦,或者Java编写的Web应用运行得比预期情况慢,就可以使用<strong>thread dumps</strong>这一利器分析问题.如果你觉得<strong>thread dumps</strong>很复杂,那么阅读本文会对你有所帮助.本文将介绍什么是Java线程,线程的种类,如何创建,如何管理,如何对正在运行的程序进行<strong>thread dumps</strong>,如何分析,最终找到瓶颈或阻塞线程.本文总结了长期调试Java程序的经验.</p>
+
+<h2>Java and Thread</h2>
+
+<h2>java和线程</h2>
+
+<p>A web server uses tens to hundreds of threads to process a large number of concurrent users. If two or more threads utilize the same resources, a contention between the threads is inevitable, and sometimes deadlock occurs.</p>
+
+<p>Web服务器通常创建很多线程去处理高并发的用户请求.如果两三个线程使用同样的服务器资源,线程间的竞争就不可避免了,更糟糕的情况下还会发生死锁.</p>
+
+<p><strong>Thread contention</strong> is a status in which one thread is waiting for a lock, held by another thread, to be lifted. Different threads frequently access shared resources on a web application. For example, to record a log, the thread trying to record the log must obtain a lock and access the shared resources.</p>
+
+<p><strong>线程竞争</strong>是指一个线程等待另一个线程持有的锁.Web服务的不同线程会频繁地访问共享资源,比如记录日志:一个试图记录日志的线程必须先获得锁才能访问共享资源.</p>
+
+<p><strong>Deadlock</strong> is a special type of thread contention, in which two or more threads are waiting for the other threads to complete their tasks in order to complete their own tasks.</p>
+
+<p><strong>死锁</strong>是线程竞争的一个特殊形式.多个线程都在等待其它线程先于自己完成任务,于是陷入无尽的等待.</p>
+
+<p>Different issues can arise from <strong>thread contention</strong>. To analyze such issues, you need to use the <strong>thread dump</strong>. A thread dump will give you the information on the exact status of each thread.</p>
+
+<p><strong>线程竞争</strong>会导致很多问题,我们需要使用<strong>thread dumps</strong>来解决,它会提供每个线程状态的确切信息.</p>
+
+<h2>Background Information for Java Threads</h2>
+
+<h2>Java线程的背景知识</h2>
+
+<h3>Thread Synchronization</h3>
+
+<h3>线程同步</h3>
+
+<p>A thread can be processed with other threads at the same time. In order to ensure compatibility when multiple threads are trying to use shared resources, one thread at a time should be allowed to access the shared resources by using <strong>thread synchronization</strong>.</p>
+
+<p>多个线程可以同时运行,为了让使用共享资源的多个线程可以和平共处,同一时刻只允许一个线程访问共享资源,这是通过<strong>线程同步</strong>来实现的.</p>
+
+<p><strong>Thread synchronization</strong> on Java can be done using monitor. Every Java object has a single monitor. The monitor can be owned by only one thread. For a thread to own a monitor that is owned by a different thread, it needs to wait in the wait queue until the other thread releases its monitor.</p>
+
+<p>Java<strong>线程同步</strong>使用了<a href="http://zh.wikipedia.org/zh-cn/%E7%9B%A3%E8%A6%96%E5%99%A8_%28%E7%A8%8B%E5%BA%8F%E5%90%8C%E6%AD%A5%E5%8C%96%29">管程</a>.每个Java对象都有一个管程.每个管程只能被一个线程持有.如果一个线程想持有另一个线程持有的管程,它需要排队等待另一个线程去释放锁.</p>
+
+<h3>Thread Status</h3>
+
+<h3>线程的状态</h3>
+
+<p>In order to analyze a <strong>thread dump</strong>, you need to know the status of threads. The statuses of threads are stated on java.lang.Thread.State.</p>
+
+<p>为了分析<strong>thread dump</strong>,我们需要知道线程的状态,这些状态用java.lang.Thread.State来表示:</p>
+
+<p><img src="/images/u404847178_13c476c51ffg85_blog.png" alt="Alt text" /></p>
+
+<p> Figure 1: Thread Status.</p>
+
+<ul>
+<li>NEW: The thread is created but has not been processed yet.</li>
+<li>RUNNABLE: The thread is occupying the CPU and processing a task. (It may be in WAITING status due to the OS&rsquo;s resource distribution.)</li>
+<li>BLOCKED: The thread is waiting for a different thread to release its lock in order to get the monitor lock.</li>
+<li>WAITING: The thread is waiting by using a wait, join or park method.</li>
+<li><p>TIMED_WAITING: The thread is waiting by using a sleep, wait, join or park method. (The difference from WAITING is that the maximum waiting time is specified by the method parameter, andWAITING can be relieved by time as well as external changes.)</p></li>
+<li><p>NEW: 线程已经被建立,但是还没有执行.</p></li>
+<li>RUNNABLE: 线程正使用CPU来处理任务(因为操作系统的资源调度原因,线程可以处于WAITING状态)</li>
+<li>BLOCKED: 线程正在等待另一个线程释放锁.</li>
+<li>WAITING: 线程因为使用了wait, join 或 park 方法而处于等待状态.</li>
+<li>TIMED_WAITING: 线程因为使用了sleep, wait, join 或 park 方法而处于等待状态. (和 WAITING 状态的区别是, 除了外部条件改变之外, 此状态有超时机制, 过了给定的最长等待时间, 此等待状态就解除了)</li>
+</ul>
+
+
+<h3>Thread Types</h3>
+
+<h3>线程种类</h3>
+
+<p>Java threads can be divided into two:</p>
+
+<ol>
+<li> daemon threads;</li>
+<li> and non-daemon threads.</li>
+</ol>
+
+
+<p>Java的线程可分为两类:</p>
+
+<ol>
+<li> 监控线程</li>
+<li> 非监控线程</li>
+</ol>
+
+
+<p>Daemon threads stop working when there are no other non-daemon threads. Even if you do not create any threads, the Java application will create several threads by default. Most of them are daemon threads, mainly for processing tasks such as garbage collection or JMX.</p>
+
+<p>当没有其它非监控线程继续运行时,监控线程才会停止.即使你没有创建任何线程,Java程序也会创建几个默认线程.默认线程大多是监控线程,主要是为了垃圾回收或者JMX.</p>
+
+<p>A thread running the &lsquo;static void main(String[] args)’ method is created as a non-daemon thread, and when this thread stops working, all other daemon threads will stop as well. (The thread running this main method is called the VM thread in HotSpot VM.)</p>
+
+<p>Java线程同步使用了管程.每个Java对象都有一个管程.每个管程只能被一个线程持有.如果一个线程想持有另一个线程持有的管程,它需要在排队等待另一个线程去释放.执行main方法的线程时非监控线程,当它结束时,所有的监控线程也都要停止.(在HotSpot VM里,这个线程叫做VM Thread).</p>
+
+<h3>Getting a Thread Dump</h3>
+
+<h3>获取Thread Dump</h3>
+
+<p>We will introduce the three most commonly used methods. Note that there are many other ways to get a thread dump. A thread dump can only show the thread status at the time of measurement, so in order to see the change in thread status, it is recommended to extract them from 5 to 10 times with 5-second intervals.</p>
+
+<p>有很多种方法可以得到<strong>thread dump</strong>,我们将介绍最常见的三种方法.一个<strong>thread dump</strong>只能包含转储时刻的线程状态,所以为了分析线程状态的变化,最好每隔5秒获取一次,得到5~10个<strong>thread dump</strong>就可以了.</p>
+
+<h4>Getting a Thread Dump Using jstack</h4>
+
+<h4>使用jstack</h4>
+
+<p>In JDK 1.6 and higher, it is possible to get a thread dump on MS Windows using jstack.</p>
+
+<p>Use PID via jps to check the PID of the currently running Java application process.</p>
+
+<p>如果JDK版本是1.6或以上,可以在MS Windows上使用jstack.</p>
+
+<p>使用jps来产看系统上正运行的java进程的PID.</p>
+
+<pre><code>[user@linux ~]$ jps -v
+25780 RemoteTestRunner -Dfile.encoding=UTF-8
+25590 sub.rmi.registry.RegistryImpl 2999 -Dapplication.home=/home1/user/java/jdk.1.6.0_24 -Xms8m
+26300 sun.tools.jps.Jps -mlvV -Dapplication.home=/home1/user/java/jdk.1.6.0_24 -Xms8m
+</code></pre>
+
+<p>Use the extracted PID as the parameter of jstack to obtain a thread dump.</p>
+
+<p>把pid作为参数传给jstack,以获取该pid对应java进程的线程转储.</p>
+
+<pre><code>[user@linux ~]$ jstack -f 5824
+</code></pre>
+
+<h4>A Thread Dump Using jVisualVM</h4>
+
+<h4>使用jVisualVM</h4>
+
+<p>Generate a thread dump by using a program such as jVisualVM.</p>
+
+<p>jVisualVM是JDK提供的可视化工具.</p>
+
+<p><img src="/images/u404847178_13c476d1fd4g86_blog.png" alt="Alt text" /></p>
+
+<p>Figure 2:  A Thread Dump Using visualvm.</p>
+
+<p>The task on the left indicates the list of currently running processes. Click on the process for which you want the information, and select the thread tab to check the thread information in real time. Click the Thread Dump button on the top right corner to get the thread dump file.</p>
+
+<p>左侧列举了正在运行的java进程.单击想要分析的进程,选择thread选项卡,可以看到实时信息.单击右上角的Thread Dump按钮生成线程转储文件.</p>
+
+<h4>Generating in a Linux Terminal</h4>
+
+<p>Obtain the process pid by using ps -ef command to check the pid of the currently running Java process.</p>
+
+<pre><code>[user@linux ~]$ ps - ef | grep java
+user      2477          1    0 Dec23 ?         00:10:45 ...
+user    25780 25361   0 15:02 pts/3    00:00:02 ./jstatd -J -Djava.security.policy=jstatd.all.policy -p 2999
+user    26335 25361   0 15:49 pts/3    00:00:00 grep java
+</code></pre>
+
+<p>Use the extracted pid as the parameter of kill –SIGQUIT(3) to obtain a thread dump.</p>
+
+<h4>Thread Information from the Thread Dump File</h4>
+
+<h4>线程转储文件包含的线程信息</h4>
+
+<pre><code>"pool-1-thread-13" prio=6 tid=0x000000000729a000 nid=0x2fb4 runnable [0x0000000007f0f000] java.lang.Thread.State: RUNNABLE
+at java.net.SocketInputStream.socketRead0(Native Method)
+at java.net.SocketInputStream.read(SocketInputStream.java:129)
+at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:264)
+at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:306)
+at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:158)
+
+- locked &lt;0x0000000780b7e688&gt; (a java.io.InputStreamReader)
+
+at java.io.InputStreamReader.read(InputStreamReader.java:167)
+at java.io.BufferedReader.fill(BufferedReader.java:136)
+at java.io.BufferedReader.readLine(BufferedReader.java:299)
+
+- locked &lt;0x0000000780b7e688&gt; (a java.io.InputStreamReader)
+
+at java.io.BufferedReader.readLine(BufferedReader.java:362)
+)
+</code></pre>
+
+<ul>
+<li>Thread name: When using Java.lang.Thread class to generate a thread, the thread will be named Thread-(Number), whereas when using java.util.concurrent.ThreadFactory class, it will be named pool-(number)-thread-(number).</li>
+<li>Priority: Represents the priority of the threads.</li>
+<li>Thread ID: Represents the unique ID for the threads. (Some useful information, including the CPU usage or memory usage of the thread, can be obtained by using thread ID.)</li>
+<li>Thread status: Represents the status of the threads.</li>
+<li><p>Thread callstack: Represents the call stack information of the threads.</p></li>
+<li><p>Thread name 线程名: 使用 Java.lang.Thread类去创建线程时,线程的命名方式为Thread-(序号);当使用java.util.concurrent.ThreadFactory类去创建线程时,线程的命名方式为pool-(序号)-thread-(序号).</p></li>
+<li>Priority 优先级: 表示线程的优先级.</li>
+<li>Thread ID 线程ID: 线程的ID是唯一的(一些有用的信息,比如线程的CPU使用率或者内存使用率,可以通过线程ID找到).</li>
+<li>Thread status 线程状态: 表示线程的状态.</li>
+<li>Thread callstack 线程调用栈: 表示线程的调用栈信息.</li>
+</ul>
+
+
+<h3>Thread Dump Patterns by Type</h3>
+
+<h3>线程转储的类型布局</h3>
+
+<h4>When Unable to Obtain a Lock (BLOCKED)</h4>
+
+<h4>无法获得锁的时候</h4>
+
+<p>This is when the overall performance of the application slows down because a thread is occupying the lock and prevents other threads from obtaining it. In the following example, BLOCKED_TEST pool-1-thread-1 thread is running with <0x0000000780a000b0> lock, while BLOCKED_TEST pool-1-thread-2 and BLOCKED_TEST pool-1-thread-3 threads are waiting to obtain <0x0000000780a000b0> lock.</p>
+
+<p>此时整个应用的性能下降了,因为一个线程持有了锁而不肯释放,导致其它线程无法获得锁.在下面的例子里,线程BLOCKED_TEST pool-1-thread-1 获得了锁<0x0000000780a000b0>并且正在运行,此时线程 BLOCKED_TEST pool-1-thread-2 和线程 BLOCKED_TEST pool-1-thread-3 在等待锁<0x0000000780a000b0>.</p>
+
+<p><img src="/images/u404847178_13c476deae9g85_blog.png" alt="Alt text" /></p>
+
+<p>Figure 3: A thread blocking other threads.</p>
+
+<pre><code>"BLOCKED_TEST pool-1-thread-1" prio=6 tid=0x0000000006904800 nid=0x28f4 runnable [0x000000000785f000]
+   java.lang.Thread.State: RUNNABLE
+    at java.io.FileOutputStream.writeBytes(Native Method)
+    at java.io.FileOutputStream.write(FileOutputStream.java:282)
+    at java.io.BufferedOutputStream.flushBuffer(BufferedOutputStream.java:65)
+    at java.io.BufferedOutputStream.flush(BufferedOutputStream.java:123)
+    - locked &lt;0x0000000780a31778&gt; (a java.io.BufferedOutputStream)
+    at java.io.PrintStream.write(PrintStream.java:432)
+    - locked &lt;0x0000000780a04118&gt; (a java.io.PrintStream)
+    at sun.nio.cs.StreamEncoder.writeBytes(StreamEncoder.java:202)
+    at sun.nio.cs.StreamEncoder.implFlushBuffer(StreamEncoder.java:272)
+    at sun.nio.cs.StreamEncoder.flushBuffer(StreamEncoder.java:85)
+    - locked &lt;0x0000000780a040c0&gt; (a java.io.OutputStreamWriter)
+    at java.io.OutputStreamWriter.flushBuffer(OutputStreamWriter.java:168)
+    at java.io.PrintStream.newLine(PrintStream.java:496)
+    - locked &lt;0x0000000780a04118&gt; (a java.io.PrintStream)
+    at java.io.PrintStream.println(PrintStream.java:687)
+    - locked &lt;0x0000000780a04118&gt; (a java.io.PrintStream)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState.monitorLock(ThreadBlockedState.java:44)
+    - locked &lt;0x0000000780a000b0&gt; (a com.nbp.theplatform.threaddump.ThreadBlockedState)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState$1.run(ThreadBlockedState.java:7)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+
+   Locked ownable synchronizers:
+    - &lt;0x0000000780a31758&gt; (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+
+"BLOCKED_TEST pool-1-thread-2" prio=6 tid=0x0000000007673800 nid=0x260c waiting for monitor entry [0x0000000008abf000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState.monitorLock(ThreadBlockedState.java:43)
+    - waiting to lock &lt;0x0000000780a000b0&gt; (a com.nbp.theplatform.threaddump.ThreadBlockedState)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState$2.run(ThreadBlockedState.java:26)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+
+   Locked ownable synchronizers:
+    - &lt;0x0000000780b0c6a0&gt; (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+
+"BLOCKED_TEST pool-1-thread-3" prio=6 tid=0x00000000074f5800 nid=0x1994 waiting for monitor entry [0x0000000008bbf000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState.monitorLock(ThreadBlockedState.java:42)
+    - waiting to lock &lt;0x0000000780a000b0&gt; (a com.nbp.theplatform.threaddump.ThreadBlockedState)
+    at com.nbp.theplatform.threaddump.ThreadBlockedState$3.run(ThreadBlockedState.java:34)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+
+   Locked ownable synchronizers:
+    - &lt;0x0000000780b0e1b8&gt; (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+</code></pre>
+
+<h4>When in Deadlock Status</h4>
+
+<h4>死锁的时候</h4>
+
+<p>This is when thread A needs to obtain thread B&rsquo;s lock to continue its task, while thread B needs to obtain thread A&rsquo;s lock to continue its task. In the thread dump, you can see that DEADLOCK_TEST-1 thread has 0x00000007d58f5e48 lock, and is trying to obtain 0x00000007d58f5e60 lock. You can also see that DEADLOCK_TEST-2 thread has 0x00000007d58f5e60 lock, and is trying to obtain 0x00000007d58f5e78 lock. Also, DEADLOCK_TEST-3 thread has 0x00000007d58f5e78 lock, and is trying to obtain 0x00000007d58f5e48 lock. As you can see, each thread is waiting to obtain another thread&rsquo;s lock, and this status will not change until one thread discards its lock.</p>
+
+<p>线程A需要获取线程B的锁,而且B的锁需要获取A的锁.在线程转储文件里,你可以看到 线程DEADLOCK_TEST-1 持有锁0x00000007d58f5e48,并试图获取 锁0x00000007d58f5e60. 你还能看到 线程DEADLOCK_TEST-2 持有 锁0x00000007d58f5e60, 并试图获取 锁0x00000007d58f5e78. 同样, 线程DEADLOCK_TEST-3 持有 锁0x00000007d58f5e78, 并试图获取 锁0x00000007d58f5e48. 和你看到的一样, 每个线程都在等着获取其它线程的锁, 这个状态保持不变, 除非有个线程放弃了它的锁.</p>
+
+<p><img src="/images/when-in-deadlock-status.png" alt="Alt text" /></p>
+
+<p>Figure 4: Threads in a Deadlock status.</p>
+
+<pre><code>"DEADLOCK_TEST-1" daemon prio=6 tid=0x000000000690f800 nid=0x1820 waiting for monitor entry [0x000000000805f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.goMonitorDeadlock(ThreadDeadLockState.java:197)
+    - waiting to lock &lt;0x00000007d58f5e60&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.monitorOurLock(ThreadDeadLockState.java:182)
+    - locked &lt;0x00000007d58f5e48&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.run(ThreadDeadLockState.java:135)
+
+   Locked ownable synchronizers:
+    - None
+
+"DEADLOCK_TEST-2" daemon prio=6 tid=0x0000000006858800 nid=0x17b8 waiting for monitor entry [0x000000000815f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.goMonitorDeadlock(ThreadDeadLockState.java:197)
+    - waiting to lock &lt;0x00000007d58f5e78&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.monitorOurLock(ThreadDeadLockState.java:182)
+    - locked &lt;0x00000007d58f5e60&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.run(ThreadDeadLockState.java:135)
+
+   Locked ownable synchronizers:
+    - None
+
+"DEADLOCK_TEST-3" daemon prio=6 tid=0x0000000006859000 nid=0x25dc waiting for monitor entry [0x000000000825f000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.goMonitorDeadlock(ThreadDeadLockState.java:197)
+    - waiting to lock &lt;0x00000007d58f5e48&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.monitorOurLock(ThreadDeadLockState.java:182)
+    - locked &lt;0x00000007d58f5e78&gt; (a com.nbp.theplatform.threaddump.ThreadDeadLockState$Monitor)
+    at com.nbp.theplatform.threaddump.ThreadDeadLockState$DeadlockThread.run(ThreadDeadLockState.java:135)
+
+   Locked ownable synchronizers:
+                - None
+</code></pre>
+
+<h4>When Continuously Waiting to Receive Messages from a Remote Server</h4>
+
+<h4>持续等待接收远程服务器数据的时候</h4>
+
+<p>The thread appears to be normal, since its state keeps showing as RUNNABLE. However, when you align the thread dumps chronologically, you can see that socketReadThread thread is waiting infinitely to read the socket.</p>
+
+<p>因为线程的状态一直是 RUNNABLE ,所以它看起来很正常. 然而, 当你把多个线程转出文件按时间顺序排列, 你可以看到线程 socketReadThread 在无限等待读取socket.</p>
+
+<p><img src="/images/when-continuosly-waiting-to-receive-message-from-remote-server.png" alt="Alt text" /></p>
+
+<p>Figure 5: Continuous Waiting Status.</p>
+
+<pre><code>"socketReadThread" prio=6 tid=0x0000000006a0d800 nid=0x1b40 runnable [0x00000000089ef000]
+   java.lang.Thread.State: RUNNABLE
+    at java.net.SocketInputStream.socketRead0(Native Method)
+    at java.net.SocketInputStream.read(SocketInputStream.java:129)
+    at sun.nio.cs.StreamDecoder.readBytes(StreamDecoder.java:264)
+    at sun.nio.cs.StreamDecoder.implRead(StreamDecoder.java:306)
+    at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:158)
+    - locked &lt;0x00000007d78a2230&gt; (a java.io.InputStreamReader)
+    at sun.nio.cs.StreamDecoder.read0(StreamDecoder.java:107)
+    - locked &lt;0x00000007d78a2230&gt; (a java.io.InputStreamReader)
+    at sun.nio.cs.StreamDecoder.read(StreamDecoder.java:93)
+    at java.io.InputStreamReader.read(InputStreamReader.java:151)
+    at com.nbp.theplatform.threaddump.ThreadSocketReadState$1.run(ThreadSocketReadState.java:27)
+    at java.lang.Thread.run(Thread.java:662)
+</code></pre>
+
+<h4>When Waiting</h4>
+
+<h4>等待的时候</h4>
+
+<p>The thread is maintaining WAIT status. In the thread dump, IoWaitThread thread keeps waiting to receive a message from LinkedBlockingQueue. If there continues to be no message for LinkedBlockingQueue, then the thread status will not change.</p>
+
+<p>线程处于 WAIT 状态. 线程转储文件里, 线程IoWaitThread 一直等待来自 LinkedBlockingQueue 的消息. 如果 LinkedBlockingQueue 没有消息, 那么线程的状态就不会改变.</p>
+
+<p><img src="/images/when-waiting.png" alt="Alt text" /></p>
+
+<p>Figure 6: Waiting status.</p>
+
+<pre><code>"IoWaitThread" prio=6 tid=0x0000000007334800 nid=0x2b3c waiting on condition [0x000000000893f000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  &lt;0x00000007d5c45850&gt; (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:156)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1987)
+    at java.util.concurrent.LinkedBlockingDeque.takeFirst(LinkedBlockingDeque.java:440)
+    at java.util.concurrent.LinkedBlockingDeque.take(LinkedBlockingDeque.java:629)
+    at com.nbp.theplatform.threaddump.ThreadIoWaitState$IoWaitHandler2.run(ThreadIoWaitState.java:89)
+    at java.lang.Thread.run(Thread.java:662)
+</code></pre>
+
+<h4>When Thread Resources Cannot be Organized Normally</h4>
+
+<h4>线程资源管理失控的时候</h4>
+
+<p>Unnecessary threads will pile up when thread resources cannot be organized normally. If this occurs, it is recommended to monitor the thread organization process or check the conditions for thread termination.</p>
+
+<p>如果不能有效地管理线程资源,那么一些不必要的线程就因为没有被销毁而越来越多. 发生这种状况的时候, 应该检查负责线程管理的线程,或者检查线程停止条件.</p>
+
+<p><img src="/images/when-thread-resources-cannot-be-organized-normally.png" alt="Alt text" /></p>
+
+<p>Figure 7: Unorganized Threads.</p>
+
+<h3>How to Solve Problems by Using Thread Dump</h3>
+
+<h3>如何用线程转储解决问题</h3>
+
+<h4>Example 1: When the CPU Usage is Abnormally High</h4>
+
+<h4>例 1: CPU使用率过高</h4>
+
+<ol>
+<li><p>Extract the thread that has the highest CPU usage.</p>
+
+<p> 找出哪个线程占用了最多的CPU资源.</p></li>
+</ol>
+
+
+<pre><code>[user@linux ~]$ ps -mo pid.lwp.stime.time.cpu -C java
+      PID         LWP          STIME          TIME               %CPU
+     10029          -         Dec07          00:02:02           99.5
+         -       10039        Dec07          00:00:00            0.1
+         -       10040        Dec07          00:00:00           95.5
+</code></pre>
+
+<p>From the application, find out which thread is using the CPU the most.</p>
+
+<p>Acquire the Light Weight Process (LWP) that uses the CPU the most and convert its unique number (10039) into a hexadecimal number (0x2737).</p>
+
+<p>找出应用里最占用CPU的那个线程,并获得它的轻量进程 Light Weight Process (LWP). 把这个唯一的LWP数字 (10039) 转成十六进制 (0x2737).</p>
+
+<ol>
+<li><p>After acquiring the thread dump, check the thread&rsquo;s action.</p>
+
+<p> 得到线程转储文件之后, 检查线程执行的动作.</p></li>
+</ol>
+
+
+<p>Extract the thread dump of an application with a PID of 10029, then find the thread with an nid of 0x2737.</p>
+
+<p>把PID为10029的应用进行线程转储, 然后找到nid为 0x2737 的线程.</p>
+
+<pre><code>"NioProcessor-2" prio=10 tid=0x0a8d2800 nid=0x2737 runnable [0x49aa5000] java.lang.Thread.State: RUNNABLE
+    at sun.nio.ch.EPollArrayWrapper.epollWait(Native Method)
+    at sun.nio.ch.EPollArrayWrapper.poll(EPollArrayWrapper.java:210)
+    at sun.nio.ch.EPollSelectorImpl.doSelect(EPollSelectorImpl.java:65)
+    at sun.nio.ch.SelectorImpl.lockAndDoSelect(SelectorImpl.java:69)
+    - locked &lt;0x74c52678&gt; (a sun.nio.ch.Util$1)
+    - locked &lt;0x74c52668&gt; (a java.util.Collections$UnmodifiableSet)
+    - locked &lt;0x74c501b0&gt; (a sun.nio.ch.EPollSelectorImpl)
+    at sun.nio.ch.SelectorImpl.select(SelectorImpl.java:80)
+    at external.org.apache.mina.transport.socket.nio.NioProcessor.select(NioProcessor.java:65)
+    at external.org.apache.mina.common.AbstractPollingIoProcessor$Worker.run(AbstractPollingIoProcessor.java:708)
+    at external.org.apache.mina.util.NamePreservingRunnable.run(NamePreservingRunnable.java:51)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)
+    at java.lang.Thread.run(Thread.java:662)
+</code></pre>
+
+<p>Extract thread dumps several times every hour, and check the status change of the threads to determine the problem.</p>
+
+<p>按一小时的时间间隔获取多个线程转储文件, 查看线程状态的变化来定位问题.</p>
+
+<h4>Example 2: When the Processing Performance is Abnormally Slow</h4>
+
+<h4>例 2: 应用的效率过低</h4>
+
+<p>After acquiring thread dumps several times, find the list of threads with BLOCKED status.</p>
+
+<p>获取多个线程转储文件之后, 找到状态为 BLOCKED 的所有线程.</p>
+
+<pre><code> "DB-Processor-13" daemon prio=5 tid=0x003edf98 nid=0xca waiting for monitor entry [0x000000000825f000]
+java.lang.Thread.State: BLOCKED (on object monitor)
+    at beans.ConnectionPool.getConnection(ConnectionPool.java:102)
+    - waiting to lock &lt;0xe0375410&gt; (a beans.ConnectionPool)
+    at beans.cus.ServiceCnt.getTodayCount(ServiceCnt.java:111)
+    at beans.cus.ServiceCnt.insertCount(ServiceCnt.java:43)
+
+"DB-Processor-14" daemon prio=5 tid=0x003edf98 nid=0xca waiting for monitor entry [0x000000000825f020]
+java.lang.Thread.State: BLOCKED (on object monitor)
+    at beans.ConnectionPool.getConnection(ConnectionPool.java:102)
+    - waiting to lock &lt;0xe0375410&gt; (a beans.ConnectionPool)
+    at beans.cus.ServiceCnt.getTodayCount(ServiceCnt.java:111)
+    at beans.cus.ServiceCnt.insertCount(ServiceCnt.java:43)
+
+"" "DB-Processor-3"" daemon prio=5 tid=0x00928248 nid=0x8b waiting for monitor entry [0x000000000825d080]
+java.lang.Thread.State: RUNNABLE
+    at oracle.jdbc.driver.OracleConnection.isClosed(OracleConnection.java:570)
+    - waiting to lock &lt;0xe03ba2e0&gt; (a oracle.jdbc.driver.OracleConnection)
+    at beans.ConnectionPool.getConnection(ConnectionPool.java:112)
+    - locked &lt;0xe0386580&gt; (a java.util.Vector)
+    - locked &lt;0xe0375410&gt; (a beans.ConnectionPool)
+    at beans.cus.Cue_1700c.GetNationList(Cue_1700c.java:66)
+    at org.apache.jsp.cue_1700c_jsp._jspService(cue_1700c_jsp.java:12)
+</code></pre>
+
+<p>Acquire the list of threads with BLOCKED status after getting the thread dumps several times.</p>
+
+<p> If the threads are BLOCKED, extract the threads related to the lock that the threads are trying to obtain.</p>
+
+<p>Through the thread dump, you can confirm that the thread status stays BLOCKED because <0xe0375410> lock could not be obtained. This problem can be solved by analyzing stack trace from the thread currently holding the lock.</p>
+
+<p>There are two reasons why the above pattern frequently appears in applications using DBMS. The first reason is inadequate configurations. Despite the fact that the threads are still working, they cannot show their best performance because the configurations for DBCP and the like are not adequate. If you extract thread dumps multiple times and compare them, you will often see that some of the threads that were BLOCKED previously are in a different state.</p>
+
+<p>The second reason is the abnormal connection. When the connection with DBMS stays abnormal, the threads wait until the time is out. In this case, even after extracting the thread dumps several times and comparing them, you will see that the threads related to DBMS are still in a BLOCKED state. By adequately changing the values, such as the timeout value, you can shorten the time in which the problem occurs.</p>
+
+<p>如果线程处于 BLOCKED 状态, 首先查找阻塞它的锁, 然后把和这个锁有关的线程找出来. 从上面的转储文件里, 你可以看到处于 BLOCKED 状态的线程, 她想获得锁 <0xe0375410>. 这个问题可以通过分析持有锁的线程的调用栈来解决. 使用DBMS的应用会频繁地出现上述问题, 原因有两个. 一是配置不完善. 尽管线程可以运行, 但是类似DBCP等选项没有被正确配置,所以达不到最高的效率. 如果获取多个线程转储文件并比较它们, 你会发现处于 BLOCKED 状态的线程之前是其它状态. 二是连接异常. 如果与DBMS的连接异常, 线程会一直等到超时. 这种情况下, 导出并比较多个转储文件, 你会发现和DBMS有关的线程仍然处于 BLOCKED 状态. 通过多次调整参数, 比如超时时间, 你可以缩短上述问题发生的时间.</p>
+
+<h3>Coding for Easy Thread Dump</h3>
+
+<h3>有利于线程转储的编码方式</h3>
+
+<h4>Naming Threads</h4>
+
+<h4>给线程命名</h4>
+
+<p>When a thread is created using java.lang.Thread object, the thread will be named Thread-(Number). When a thread is created using java.util.concurrent.DefaultThreadFactory object, the thread will be named pool-(Number)-thread-(Number). When analyzing tens to thousands of threads for an application, if all the threads still have their default names, analyzing them becomes very difficult, because it is difficult to distinguish the threads to be analyzed.</p>
+
+<p>使用java.lang.Thread 创建线程时, 线程被命名为 Thread-(序号). 使用java.util.concurrent.DefaultThreadFactory 创建线程, 线程被命名为 pool-(序号)-thread-(序号). 如果应用有成百上千的线程, 这些线程都使用默认的命名, 分析这些线程就变得困难, 因为区分这些线程不是一件容易的事.</p>
+
+<p>Therefore, you are recommended to develop the habit of naming the threads whenever a new thread is created.</p>
+
+<p>所以,要养成给线程命名的好习惯.</p>
+
+<p>When you create a thread using java.lang.Thread, you can give the thread a custom name by using the creator parameter.</p>
+
+<p>使用 java.lang.Thread时, 通过构造函数给线程一个定制的名字.</p>
+
+<pre><code>public Thread(Runnable target, String name);
+public Thread(ThreadGroup group, String name);
+public Thread(ThreadGroup group, Runnable target, String name);
+public Thread(ThreadGroup group, Runnable target, String name, long stackSize);
+</code></pre>
+
+<p>When you create a thread using java.util.concurrent.ThreadFactory, you can name it by generating your own ThreadFactory. If you do not need special functionalities, then you can use MyThreadFactory as described below:</p>
+
+<p>使用 java.util.concurrent.ThreadFactory时, 可以自己实现一个ThreadFactory. 如果没有特殊的需求, 下面的例子就足够了.</p>
+
+<pre><code>import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class MyThreadFactory implements ThreadFactory {
+  private static final ConcurrentHashMap&lt;String, AtomicInteger&gt; POOL_NUMBER =
+                                                       new ConcurrentHashMap&lt;String, AtomicInteger&gt;();
+  private final ThreadGroup group;
+  private final AtomicInteger threadNumber = new AtomicInteger(1);
+  private final String namePrefix;
+
+  public MyThreadFactory(String threadPoolName) {
+
+      if (threadPoolName == null) {
+          throw new NullPointerException("threadPoolName");
+      }
+
+      POOL_NUMBER.putIfAbsent(threadPoolName, new AtomicInteger());
+
+      SecurityManager securityManager = System.getSecurityManager();
+      group = (securityManager != null) ? securityManager.getThreadGroup() :
+                                                    Thread.currentThread().getThreadGroup();
+
+      AtomicInteger poolCount = POOL_NUMBER.get(threadPoolName);
+
+      if (poolCount == null) {
+            namePrefix = threadPoolName + " pool-00-thread-";
+      } else {
+            namePrefix = threadPoolName + " pool-" + poolCount.getAndIncrement() + "-thread-";
+      }
+  }
+
+  public Thread newThread(Runnable runnable) {
+      Thread thread = new Thread(group, runnable, namePrefix + threadNumber.getAndIncrement(), 0);
+
+      if (thread.isDaemon()) {
+            thread.setDaemon(false);
+      }
+
+      if (thread.getPriority() != Thread.NORM_PRIORITY) {
+            thread.setPriority(Thread.NORM_PRIORITY);
+      }
+
+      return thread;
+  }
+}
+</code></pre>
+
+<h4>Obtaining More Detailed Information by Using MBean</h4>
+
+<h4>通过MBean获得更详细的信息</h4>
+
+<p>You can obtain ThreadInfo objects using MBean. You can also obtain more information that would be difficult to acquire via thread dumps, by using ThreadInfo.</p>
+
+<p>你可以使用MBean获得ThreadInfo对象. 你也可以使用ThreadInfo来获得一些信息, 而线程转储的方式很难获取这些信息.</p>
+
+<pre><code>ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+long[] threadIds = mxBean.getAllThreadIds();
+ThreadInfo[] threadInfos = mxBean.getThreadInfo(threadIds);
+
+for (ThreadInfo threadInfo : threadInfos) {
+  System.out.println(threadInfo.getThreadName());
+  System.out.println(threadInfo.getBlockedCount());
+  System.out.println(threadInfo.getBlockedTime());
+  System.out.println(threadInfo.getWaitedCount());
+  System.out.println(threadInfo.getWaitedTime());
+} 
+</code></pre>
+
+<p>You can acquire the amount of time that the threads WAITed or were BLOCKED by using the method in ThreadInfo, and by using this you can also obtain the list of threads that have been inactive for an abnormally long period of time.</p>
+
+<p>你可以方便地得到线程处于 WAIT 和 BLOCKED 状态的时间, 由此你可以获得那些长期处于不活动状态的线程列表.</p>
+
+<h3>In Conclusion</h3>
+
+<h3>结论</h3>
+
+<p>In this article I was concerned that for developers with a lot of experience in multi-thread programming, this material may be common knowledge, whereas for less experienced developers, I felt that I was skipping straight to thread dumps, without providing enough background information about the thread activities. This was because of my lack of knowledge, as I was not able to explain the thread activities in a clear yet concise manner. I sincerely hope that this article will prove helpful for many developers.</p>
+
+<p>这篇文章总结了处理多线程的常识性的经验, 对这方面有很多经验的人来说可能帮助不大. 对新人来说, 我感觉我在开门见山地讲线程转储, 而略过了线程活动的背景知识. 这是因为我缺少这方面的经验, 不能简单扼要地进行阐述. 我真诚地希望这篇文章能够帮助更多的人.</p>
+]]></content>
+  </entry>
+  
+</feed>
