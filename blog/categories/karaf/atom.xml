@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: karaf | Keep It Simple, Stupid]]></title>
+  <link href="http://yangtao309.github.io/blog/categories/karaf/atom.xml" rel="self"/>
+  <link href="http://yangtao309.github.io/"/>
+  <updated>2014-08-18T19:27:10+08:00</updated>
+  <id>http://yangtao309.github.io/</id>
+  <author>
+    <name><![CDATA[samung]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[karaf 应用中如何配置数据源]]></title>
+    <link href="http://yangtao309.github.io/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/"/>
+    <updated>2014-08-18T18:52:54+08:00</updated>
+    <id>http://yangtao309.github.io/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan</id>
+    <content type="html"><![CDATA[<p>我厂主要系统采用模块化开发以来，就遇到诸多的问题，不过都还可以解决。模块化我们选用了<strong>karaf</strong>这个集成组件。</p>
+
+<p>开发中遇到数据源的配置问题。主要表现在每一位开发的数据库都是分开的，线上产品的数据库也是分开，线上数据库通过<strong>CMDB</strong>工具可以取到相应配置。</p>
+
+<p>要解决以上需求，我们将开发和线上的datasource分成了两个独立的模块，开发对应模块xx-datasource-dev,那么线上对应的就是xx-datasource-production. 为什么要分成两个项目？ 很明显，我们开发环境中没有<strong>CMDB</strong>这样工具来集中管理开发人员的数据库，目前还是开发自己在玩自己的数据库。</p>
+
+<p>这样我们的开发数据库基本上依赖maven来构建。</p>
+
+<p>线上的依赖<strong>CMDB</strong>在初始化客户系统的时候，创建好数据源。看起来一切很ok,但是没法重启。(因为部署的时候消息触发来取<strong>CMDB</strong>的配置信息, 重启只是重启整个<strong>karaf</strong>)</p>
+
+<p>我们考虑到了，需要将线上初始化取到的<strong>CMBD</strong>配置进行持久化(写文件)。 那么在<strong>karaf</strong>环境下如何写文件和读文件呢？</p>
+
+<p>我们参考了<strong>karaf</strong><a href="http://karaf.apache.org/manual/latest/users-guide/configuration.html">官方手册</a>的介绍。</p>
+
+<h3>实例</h3>
+
+<p>首先需要写一个POJO来处理datasource的基础属性，我们这里简单处理只设置driver | url | username | password 4个属性。</p>
+
+<pre><code>public class Datasource {
+    public final static String DATASOURCE_PROP_PID = "datasource.prop";
+
+    private String driver;
+    private String url;
+    private String username;
+    private String password;
+
+    public String getDriver() {
+        return driver;
+    }
+
+    public void setDriver(String driver) {
+        this.driver = driver;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+}
+</code></pre>
+
+<p>定义一个读配置的service，可以在datasource bundle激活器被触发时候来设置数据源并进行服务注册。</p>
+
+<pre><code>public interface DatasourceQuery {
+    Datasource findDatabase();
+}
+
+public class DatasourceQueryImpl implements DatasourceQuery {
+    @Override
+    public Datasource findDatabase() {
+        return datasource;
+    }
+
+    private Datasource datasource;
+
+    public Datasource getDatasource() {
+        return datasource;
+    }
+
+    public void setDatasource(Datasource datasource) {
+        this.datasource = datasource;
+    }
+}
+</code></pre>
+
+<p>程序很简单，关键是配置，目前karaf默认配置应用的是<strong>blueprint</strong>。</p>
+
+<pre><code>文件目录地址: src/main/resources/OSGI-INF/blueprint/database.xml
+
+&lt;blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:osgi="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0
+                http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+                http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0
+                http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd"&gt;
+    &lt;cm:property-placeholder persistent-id="datasource.prop" update-strategy="reload"&gt;
+        &lt;cm:default-properties&gt;
+            &lt;cm:property name="driver" value=""/&gt;
+            &lt;cm:property name="url" value=""/&gt;
+            &lt;cm:property name="username" value=""/&gt;
+            &lt;cm:property name="password" value=""/&gt;
+        &lt;/cm:default-properties&gt;
+    &lt;/cm:property-placeholder&gt;
+
+    &lt;bean id="datasource" class="com.xx.Datasource"&gt;
+        &lt;property name="driver" value="${driver}"/&gt;
+        &lt;property name="url" value="${url}"/&gt;
+        &lt;property name="username" value="${username}"/&gt;
+        &lt;property name="password" value="${password}"/&gt;
+    &lt;/bean&gt;
+
+    &lt;bean id="datasourceQuery" class="com.xx.impl.DatasourceQueryImpl"&gt;
+        &lt;property name="datasource" ref="datasource"/&gt;
+    &lt;/bean&gt;
+
+    &lt;service ref="datasourceQuery" interface="com.xx.DatasourceDevPropQuery"/&gt;
+&lt;/blueprint&gt;
+</code></pre>
+
+<p>以上配置是比较关键的。在整个bundle加载的时候会将<strong>karaf</strong>的/etc/datasource.prop.cfg文件对应起来，并可以通过config命令进行写入值，也可以读取值。</p>
+
+<p>对于在发布该bundle的时候，需要将对应的文件也写入到指定的文件目录:</p>
+
+<pre><code>&lt;feature name="database" version="${project.version}"&gt;
+        &lt;configfile finalname="/etc/datasource.prop.cfg"&gt;mvn:com.xx/datasource-prop/${version}/cfg/datasource.prop&lt;/configfile&gt;
+        &lt;feature version="${version}"&gt;datasource-prop&lt;/feature&gt;
+    &lt;/feature&gt;
+</code></pre>
+
+<p>另外要考虑的如何才能符合上述的格式进行安装(configfile).</p>
+
+<p>需要在编译安装的时候进行生成，在<strong>pom.xml</strong>需要用到插件。</p>
+
+<pre><code>&lt;plugin&gt;
+                &lt;inherited&gt;false&lt;/inherited&gt;
+                &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+                &lt;artifactId&gt;build-helper-maven-plugin&lt;/artifactId&gt;
+                &lt;version&gt;1.8&lt;/version&gt;
+                &lt;executions&gt;
+                    &lt;execution&gt;
+                        &lt;id&gt;attach-artifacts&lt;/id&gt;
+                        &lt;phase&gt;package&lt;/phase&gt;
+                        &lt;goals&gt;
+                            &lt;goal&gt;attach-artifact&lt;/goal&gt;
+                        &lt;/goals&gt;
+                        &lt;configuration&gt;
+                            &lt;artifacts&gt;
+                                &lt;artifact&gt;
+                                    &lt;file&gt;target/classes/datasource.prop.cfg&lt;/file&gt;
+                                    &lt;type&gt;cfg&lt;/type&gt;
+                                    &lt;classifier&gt;datasource.prop&lt;/classifier&gt;
+                                &lt;/artifact&gt;
+                            &lt;/artifacts&gt;
+                        &lt;/configuration&gt;
+                    &lt;/execution&gt;
+                &lt;/executions&gt;
+            &lt;/plugin&gt;
+</code></pre>
+
+<p>这样写好后，只需要在<strong>karaf</strong>里面安装该bundle，然后去指定文件目录确定该文件是否生成。生成后，就可以用<strong>karaf</strong>提供的config命令来进行设置值了。</p>
+
+<p>在后续的datasource bundle的激活器中进行存储和获取。</p>
+
+<p>具体代码会整理一个github小项目供大家下载。</p>
+]]></content>
+  </entry>
+  
+</feed>
