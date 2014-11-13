@@ -73,7 +73,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/">Karaf 应用中如何配置数据源</a></h1>
+      <h1 class="entry-title"><a href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/">Karaf应用中配置数据源</a></h1>
     
     
       <p class="meta">
@@ -116,215 +116,38 @@
 
 <p>首先需要写一个POJO来处理datasource的基础属性，我们这里简单处理只设置driver | url | username | password 4个属性。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>public class Datasource {
-</span><span class='line'>    public final static String DATASOURCE_PROP_PID = "datasource.prop";
-</span><span class='line'>
-</span><span class='line'>    private String driver;
-</span><span class='line'>    private String url;
-</span><span class='line'>    private String username;
-</span><span class='line'>    private String password;
-</span><span class='line'>
-</span><span class='line'>    public String getDriver() {
-</span><span class='line'>        return driver;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public void setDriver(String driver) {
-</span><span class='line'>        this.driver = driver;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public String getPassword() {
-</span><span class='line'>        return password;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public void setPassword(String password) {
-</span><span class='line'>        this.password = password;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public String getUrl() {
-</span><span class='line'>        return url;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public void setUrl(String url) {
-</span><span class='line'>        this.url = url;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public String getUsername() {
-</span><span class='line'>        return username;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public void setUsername(String username) {
-</span><span class='line'>        this.username = username;
-</span><span class='line'>    }
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
-
+<p>程序代码参见<a href="https://github.com/yangtao309/guide-karaf/blob/master/config/src/main/java/com/tzn/tutorial/config/DatasourceConfiguration.java">DatasourceConfiguration</a></p>
 
 <p>定义一个读配置的service，可以在datasource bundle激活器被触发时候来设置数据源并进行服务注册。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>public interface DatasourceQuery {
-</span><span class='line'>    Datasource findDatabase();
-</span><span class='line'>}
-</span><span class='line'>
-</span><span class='line'>public class DatasourceQueryImpl implements DatasourceQuery {
-</span><span class='line'>    @Override
-</span><span class='line'>    public Datasource findDatabase() {
-</span><span class='line'>        return datasource;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    private Datasource datasource;
-</span><span class='line'>
-</span><span class='line'>    public Datasource getDatasource() {
-</span><span class='line'>        return datasource;
-</span><span class='line'>    }
-</span><span class='line'>
-</span><span class='line'>    public void setDatasource(Datasource datasource) {
-</span><span class='line'>        this.datasource = datasource;
-</span><span class='line'>    }
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
-
+<p>程序代码参见<a href="https://github.com/yangtao309/guide-karaf/blob/master/config/src/main/java/com/tzn/tutorial/config/DatasourceConfigurationQuery.java">DatasourceConfigurationQuery</a></p>
 
 <p>程序很简单，关键是配置，目前karaf默认配置应用的是<strong>blueprint</strong>。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>文件目录地址: src/main/resources/OSGI-INF/blueprint/database.xml
-</span><span class='line'>
-</span><span class='line'>&lt;blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-</span><span class='line'>           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
-</span><span class='line'>           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:osgi="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-</span><span class='line'>           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0
-</span><span class='line'>                http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
-</span><span class='line'>                http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0
-</span><span class='line'>                http://aries.apache.org/schemas/blueprint-cm/blueprint-cm-1.1.0.xsd"&gt;
-</span><span class='line'>    &lt;cm:property-placeholder persistent-id="datasource.prop" update-strategy="reload"&gt;
-</span><span class='line'>        &lt;cm:default-properties&gt;
-</span><span class='line'>            &lt;cm:property name="driver" value=""/&gt;
-</span><span class='line'>            &lt;cm:property name="url" value=""/&gt;
-</span><span class='line'>            &lt;cm:property name="username" value=""/&gt;
-</span><span class='line'>            &lt;cm:property name="password" value=""/&gt;
-</span><span class='line'>        &lt;/cm:default-properties&gt;
-</span><span class='line'>    &lt;/cm:property-placeholder&gt;
-</span><span class='line'>
-</span><span class='line'>    &lt;bean id="datasource" class="com.xx.Datasource"&gt;
-</span><span class='line'>        &lt;property name="driver" value="${driver}"/&gt;
-</span><span class='line'>        &lt;property name="url" value="${url}"/&gt;
-</span><span class='line'>        &lt;property name="username" value="${username}"/&gt;
-</span><span class='line'>        &lt;property name="password" value="${password}"/&gt;
-</span><span class='line'>    &lt;/bean&gt;
-</span><span class='line'>
-</span><span class='line'>    &lt;bean id="datasourceQuery" class="com.xx.impl.DatasourceQueryImpl"&gt;
-</span><span class='line'>        &lt;property name="datasource" ref="datasource"/&gt;
-</span><span class='line'>    &lt;/bean&gt;
-</span><span class='line'>
-</span><span class='line'>    &lt;service ref="datasourceQuery" interface="com.xx.DatasourceDevPropQuery"/&gt;
-</span><span class='line'>&lt;/blueprint&gt;</span></code></pre></td></tr></table></div></figure>
-
+<p>配置代码参见<a href="https://github.com/yangtao309/guide-karaf/blob/master/config/src/main/resources/OSGI-INF/blueprint/datasourceConfiguration.xml">datasourceConfiguration.xml</a></p>
 
 <p>以上配置是比较关键的。在整个bundle加载的时候会将<strong>karaf</strong>的/etc/datasource.prop.cfg文件对应起来，并可以通过config命令进行写入值，也可以读取值。</p>
 
 <p>对于在发布该bundle的时候，需要将对应的文件也写入到指定的文件目录:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;feature name="database" version="${project.version}"&gt;
-</span><span class='line'>        &lt;configfile finalname="/etc/datasource.prop.cfg"&gt;mvn:com.xx/datasource-prop/${version}/cfg/datasource.prop&lt;/configfile&gt;
-</span><span class='line'>        &lt;feature version="${version}"&gt;datasource-prop&lt;/feature&gt;
-</span><span class='line'>    &lt;/feature&gt;</span></code></pre></td></tr></table></div></figure>
-
+<p>代码参见<a href="https://github.com/yangtao309/guide-karaf/blob/master/config/src/main/resources/features.xml#L5">features.xml</a></p>
 
 <p>另外要考虑的如何才能符合上述的格式进行安装(configfile).</p>
 
 <p>需要在编译安装的时候进行生成，在<strong>pom.xml</strong>需要用到插件。</p>
+
+<p>代码参见<a href="https://github.com/yangtao309/guide-karaf/blob/master/config/pom.xml#L75">pom.xml</a></p>
+
+<p>这样写好后，只需要在<strong>karaf</strong>里面安装该bundle，然后去指定文件目录确定该文件是否生成。生成后，就可以用<strong>karaf</strong>提供的config命令来进行设置值了。</p>
+
+<p>在后续的datasource bundle的激活器中进行存储和获取。
+存取方式分为2种:</p>
+
+<ol>
+<li>config:list | config:edit</li>
+<li>应用ConfigurationAdmin 程序实现</li>
+</ol>
+
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -345,42 +168,27 @@
 <span class='line-number'>17</span>
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;plugin&gt;
-</span><span class='line'>                &lt;inherited&gt;false&lt;/inherited&gt;
-</span><span class='line'>                &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
-</span><span class='line'>                &lt;artifactId&gt;build-helper-maven-plugin&lt;/artifactId&gt;
-</span><span class='line'>                &lt;version&gt;1.8&lt;/version&gt;
-</span><span class='line'>                &lt;executions&gt;
-</span><span class='line'>                    &lt;execution&gt;
-</span><span class='line'>                        &lt;id&gt;attach-artifacts&lt;/id&gt;
-</span><span class='line'>                        &lt;phase&gt;package&lt;/phase&gt;
-</span><span class='line'>                        &lt;goals&gt;
-</span><span class='line'>                            &lt;goal&gt;attach-artifact&lt;/goal&gt;
-</span><span class='line'>                        &lt;/goals&gt;
-</span><span class='line'>                        &lt;configuration&gt;
-</span><span class='line'>                            &lt;artifacts&gt;
-</span><span class='line'>                                &lt;artifact&gt;
-</span><span class='line'>                                    &lt;file&gt;target/classes/datasource.prop.cfg&lt;/file&gt;
-</span><span class='line'>                                    &lt;type&gt;cfg&lt;/type&gt;
-</span><span class='line'>                                    &lt;classifier&gt;datasource.prop&lt;/classifier&gt;
-</span><span class='line'>                                &lt;/artifact&gt;
-</span><span class='line'>                            &lt;/artifacts&gt;
-</span><span class='line'>                        &lt;/configuration&gt;
-</span><span class='line'>                    &lt;/execution&gt;
-</span><span class='line'>                &lt;/executions&gt;
-</span><span class='line'>            &lt;/plugin&gt;</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>private ConfigurationAdmin configAdmin;
+</span><span class='line'>
+</span><span class='line'>private void updateDatasourceProp(final DatasourceProp datasourceProp) {
+</span><span class='line'>        try {
+</span><span class='line'>            Configuration configuration = configAdmin.getConfiguration(DatasourceProp.PID);
+</span><span class='line'>            Dictionary&lt;String,Object&gt; props = new Hashtable&lt;String,Object&gt;();
+</span><span class='line'>            props.put(DatasourceProp.URL_KEY, datasourceProp.getUrl());
+</span><span class='line'>            props.put(DatasourceProp.USERNAME_KEY, datasourceProp.getUsername());
+</span><span class='line'>            props.put(DatasourceProp.PASSWORD_KEY, datasourceProp.getPassword());
+</span><span class='line'>            props.put(DatasourceProp.MIGRATION_KEY, datasourceProp.getMigration());
+</span><span class='line'>            configuration.setBundleLocation(null);
+</span><span class='line'>            configuration.update(props);
+</span><span class='line'>        } catch (final Exception e) {
+</span><span class='line'>            logger.error("reason : datasourceProp update failure", e);
+</span><span class='line'>            throw new ExceptionInInitializerError(e);
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>&lt;reference id="configAdmin" interface="org.osgi.service.cm.ConfigurationAdmin"/&gt;
+</span></code></pre></td></tr></table></div></figure>
 
-
-<p>这样写好后，只需要在<strong>karaf</strong>里面安装该bundle，然后去指定文件目录确定该文件是否生成。生成后，就可以用<strong>karaf</strong>提供的config命令来进行设置值了。</p>
-
-<p>在后续的datasource bundle的激活器中进行存储和获取。</p>
-
-<p>具体代码会整理一个github小项目供大家下载。</p>
 </div>
   
   
@@ -2004,7 +1812,7 @@ tags copy to的一个要修复的版本，同样对应的是SNAPSHOT版本。仅
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/">Karaf 应用中如何配置数据源</a>
+        <a href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/">Karaf应用中配置数据源</a>
       </li>
     
       <li class="post">
