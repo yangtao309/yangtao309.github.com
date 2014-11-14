@@ -4,7 +4,7 @@
   <title><![CDATA[Category: maven | Keep It Simple, Stupid]]></title>
   <link href="http://yangtao309.github.io/blog/categories/maven/atom.xml" rel="self"/>
   <link href="http://yangtao309.github.io/"/>
-  <updated>2014-11-14T15:22:29+08:00</updated>
+  <updated>2014-11-14T15:45:01+08:00</updated>
   <id>http://yangtao309.github.io/</id>
   <author>
     <name><![CDATA[samung]]></name>
@@ -25,7 +25,7 @@
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[Maven 源码分析（一）]]></title>
+    <title type="html"><![CDATA[Maven 源码分析 (一)]]></title>
     <link href="http://yangtao309.github.io/blog/2014/11/14/mavendai-ma-yue-du-1/"/>
     <updated>2014-11-14T09:37:48+08:00</updated>
     <id>http://yangtao309.github.io/blog/2014/11/14/mavendai-ma-yue-du-1</id>
