@@ -1,0 +1,453 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Maven 源码分析（一） - Keep It Simple, Stupid</title>
+  <meta name="author" content="samung">
+
+  
+  <meta name="description" content="Maven 源代码下载 下载地址maven source 通过git clone 然后切换到maven-3.1.1 Maven 安装包(tar.gz|zip) 下载地址apache-maven-3.1.1-bin.zip 将其下载。 类加载框架plexus-classworlds &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yangtao309.github.io/blog/2014/11/14/mavendai-ma-yue-du-1">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Keep It Simple, Stupid" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Keep It Simple, Stupid</a></h1>
+  
+    <h2>简单 快乐 追求</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:yangtao309.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="/blog/categories">Categories</a></li>
+  <li><a href="/blog/about">About Me</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Maven 源码分析（一）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-11-14T09:37:48+08:00" pubdate data-updated="true"></time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h4>Maven 源代码下载</h4>
+
+<p>下载地址<a href="https://git-wip-us.apache.org/repos/asf/maven.git">maven source</a> 通过git clone 然后切换到maven-3.1.1</p>
+
+<h4>Maven 安装包(tar.gz|zip)</h4>
+
+<p>下载地址<a href="http://mirrors.cnnic.cn/apache/maven/maven-3/3.1.1/binaries/apache-maven-3.1.1-bin.zip">apache-maven-3.1.1-bin.zip</a> 将其下载。</p>
+
+<h4>类加载框架plexus-classworlds</h4>
+
+<p>下载地址<a href="https://github.com/sonatype/plexus-classworlds/tree/plexus-classworlds-2.5.1">plexus-classworlds-2.5.1</a></p>
+
+<h4>代码组织结构</h4>
+
+<p>图一</p>
+
+<p><img src="/images/01BA59BB-B9F9-437E-B03E-DCD637F180F9.png" alt="Alt text" /></p>
+
+<h5>Main 函数在哪里？</h5>
+
+<p>我们先看看apache-maven-3.1.1下mvn脚本，源文件在<a href="https://github.com/yangtao309/maven-tutorial/blob/master/apache-maven-3.1.1/bin/mvn#L185">mvn</a></p>
+
+<p>看到该文件的最后</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>CLASSWORLDS_LAUNCHER=org.codehaus.plexus.classworlds.launcher.Launcher
+</span><span class='line'>
+</span><span class='line'>exec "$JAVACMD" \
+</span><span class='line'>  $MAVEN_OPTS \
+</span><span class='line'>  -classpath "${M2_HOME}"/boot/plexus-classworlds-*.jar \
+</span><span class='line'>  "-Dclassworlds.conf=${M2_HOME}/bin/m2.conf" \
+</span><span class='line'>  "-Dmaven.home=${M2_HOME}"  \
+</span><span class='line'>  ${CLASSWORLDS_LAUNCHER} "$@"</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p>可以看到这里用到了plexus-classworlds 类加载框架，启动maven的<a href="https://github.com/yangtao309/maven-tutorial/blob/master/plexus-classworlds/src/main/java/org/codehaus/plexus/classworlds/launcher/Launcher.java#L352">Laucher#main</a></p>
+
+<p>源文件参考<a href="https://github.com/yangtao309/maven-tutorial/blob/master/apache-maven-3.1.1/bin/m2.conf#L1">m2.conf</a></p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>main is org.apache.maven.cli.MavenCli from plexus.core
+</span><span class='line'>
+</span><span class='line'>// 注释掉 // set maven.home default ${user.home}/m2
+</span><span class='line'>
+</span><span class='line'>set maven.home default /Users/yangtao/maven-tutorial/apache-maven-3.1.1
+</span><span class='line'>
+</span><span class='line'>[plexus.core]
+</span><span class='line'>optionally ${maven.home}/lib/ext/*.jar
+</span><span class='line'>load       ${maven.home}/lib/*.jar
+</span><span class='line'>load       ${maven.home}/conf/logging</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p>在这里，我们可以试着通过debug代码来逐步了解。
+本文的案例是在intellij里面操作的，那么我们需要在启动Laucher.main()的时候，设置部分参数；</p>
+
+<p>图二</p>
+
+<p><img src="/images/E23A5265-D9D8-47C2-9B4E-0A8F7C57FFB6.png" alt="Alt text" /></p>
+
+<p>下面我来仔细看看Laucher.main()做了什么</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public static void main( String[] args )
+</span><span class='line'>    {
+</span><span class='line'>        try
+</span><span class='line'>        {
+</span><span class='line'>           // 1
+</span><span class='line'>            int exitCode = mainWithExitCode( args );
+</span><span class='line'>
+</span><span class='line'>            System.exit( exitCode );
+</span><span class='line'>        }
+</span><span class='line'>        catch ( Exception e )
+</span><span class='line'>        {
+</span><span class='line'>            e.printStackTrace();
+</span><span class='line'>
+</span><span class='line'>            System.exit( 100 );
+</span><span class='line'>        }
+</span><span class='line'>    }</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p>标记为1处，处理传入参数并返回退出代码，我们细致的来看下<a href="https://github.com/yangtao309/maven-tutorial/blob/master/plexus-classworlds/src/main/java/org/codehaus/plexus/classworlds/launcher/Launcher.java#L375">mainWithExitCode</a>做了什么？</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public static int mainWithExitCode( String[] args )
+</span><span class='line'>        throws Exception
+</span><span class='line'>    {
+</span><span class='line'>        String classworldsConf = System.getProperty( CLASSWORLDS_CONF );
+</span><span class='line'>      
+</span><span class='line'>      // 此处省略读classworlds_conf参数的处理
+</span><span class='line'>        // 1
+</span><span class='line'>        launcher.configure( is );
+</span><span class='line'>
+</span><span class='line'>        is.close();
+</span><span class='line'>
+</span><span class='line'>        try
+</span><span class='line'>        {
+</span><span class='line'>            // 2
+</span><span class='line'>            launcher.launch( args );
+</span><span class='line'>        }
+</span><span class='line'>        catch ( InvocationTargetException e )
+</span><span class='line'>        {
+</span><span class='line'>            ClassRealm realm = launcher.getWorld().getRealm( launcher.getMainRealmName() );
+</span><span class='line'>
+</span><span class='line'>            URL[] constituents = realm.getURLs();
+</span><span class='line'>
+</span><span class='line'>            // 省略 异常处理细节
+</span><span class='line'>            // Else just toss the ITE
+</span><span class='line'>            throw e;
+</span><span class='line'>        }
+</span><span class='line'>
+</span><span class='line'>        return launcher.getExitCode();
+</span><span class='line'>    }</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p>标记1处，读m2.conf的配置文件，并进行解析。</p>
+
+<p>标记2处，反射调用MavenCli.main()，去执行mvn相关的命令。</p>
+
+<p>下一篇文章主要介绍plexus-classworlds是怎么来解析配置并调用指定主函数的？<a href="blog/2014/11/14/mavenyuan-ma-fen-xi-2/">Maven 源码分析之第二篇</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">samung</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-11-14T09:37:48+08:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/maven/'>maven</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+	<div class="bshare-custom">
+		<div class="bsPromo bsPromo1"></div>
+		<a title="分享到新浪微博" class="bshare-sinaminiblog"></a>
+		<a title="分享到QQ空间" class="bshare-qzone"></a>
+		<a title="分享到腾讯微博" class="bshare-qqmb"></a>
+		<a title="分享到人人网" class="bshare-renren"></a>
+		<a title="分享到网易微博" class="bshare-neteasemb"></a>
+		<a title="更多平台" class="bshare-more bshare-more-icon more-style-addthis"></a>
+		<span class="BSHARE_COUNT bshare-share-count">0</span>
+	</div>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/button.js#style=-1&amp;uuid=&amp;pophcol=2&amp;lang=zh"></script>
+	<script type="text/javascript" charset="utf-8" src="http://static.bshare.cn/b/bshareC0.js"></script>
+  
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/" title="Previous Post: karaf应用中配置数据源">&laquo; karaf应用中配置数据源</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014/11/14/mavenyuan-ma-fen-xi-2/" title="Next Post: Maven 源码分析 (二)">Maven 源码分析 (二) &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/11/14/mavenyuan-ma-fen-xi-2/">Maven 源码分析 (二)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/11/14/mavendai-ma-yue-du-1/">Maven 源码分析（一）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/18/karaf-ying-yong-zhong-ru-he-pei-zhi-shu-ju-yuan/">Karaf应用中配置数据源</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/17/understanding-java-garbage-collection/">Understanding Java Garbage Collection</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/17/how-to-analyze-java-thread-dumps/">How to Analyze Java Thread Dumps</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/yangtao309">@yangtao309</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'yangtao309',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+<section>	<h1>新浪微博</h1>	<ul id="weibo">		<li>			<iframe 				width="100%" 				height="550" 				class="share_self"  				frameborder="0" 				scrolling="no" 				src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=0&noborder=0&isWeibo=1&isFans=1&uid=1692592813&verifier=b001128f&dpc=1"></iframe>		</li>	</ul></section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - samung -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'yangtao309';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://yangtao309.github.io/blog/2014/11/14/mavendai-ma-yue-du-1/';
+        var disqus_url = 'http://yangtao309.github.io/blog/2014/11/14/mavendai-ma-yue-du-1/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
