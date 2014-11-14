@@ -4,7 +4,7 @@
   <title><![CDATA[Category: maven | Keep It Simple, Stupid]]></title>
   <link href="http://yangtao309.github.io/blog/categories/maven/atom.xml" rel="self"/>
   <link href="http://yangtao309.github.io/"/>
-  <updated>2014-11-14T16:00:22+08:00</updated>
+  <updated>2014-11-14T16:52:51+08:00</updated>
   <id>http://yangtao309.github.io/</id>
   <author>
     <name><![CDATA[samung]]></name>
@@ -20,7 +20,60 @@
     <id>http://yangtao309.github.io/blog/2014/11/14/mavenyuan-ma-fen-xi-2</id>
     <content type="html"><![CDATA[<h4>前言</h4>
 
+<hr />
+
 <p>上一篇文章<a href="/blog/2014/11/14/mavendai-ma-yue-du-1/">Maven 源码分析 (一)</a>介绍了我们如何开始分析Maven源代码，也介绍到了Maven的启动需要依赖与plexus-classworlds这样的类加载框架来负责加载Maven运行命令需要的jar。</p>
+
+<p>在继续本篇的话题之前需要了解Maven包文件中的文件目录以及说明。</p>
+
+<pre><code>xxx-MBP-2:apache-maven-3.1.1 xxx$ tree
+.
+├── LICENSE
+├── NOTICE
+├── README.txt
+├── bin
+│   ├── m2.conf
+│   ├── mvn
+│   ├── mvn.bat
+│   ├── mvnDebug
+│   ├── mvnDebug.bat
+│   └── mvnyjp
+├── boot
+│   └── plexus-classworlds-2.5.1.jar
+├── conf
+│   ├── logging
+│   │   └── simplelogger.properties
+│   └── settings.xml
+└── lib
+    ├── aether-api-0.9.0.M2.jar
+    ├── 此处省略很多的jar文件
+    ├── plexus-interpolation-1.19.jar
+    ├── plexus-sec-dispatcher-1.3.jar
+    ├── plexus-sec-dispatcher.license
+    ├── plexus-utils-3.0.15.jar
+    ├── sisu-guice-3.1.3-no_aop.jar
+    ├── slf4j-api-1.7.5.jar
+    ├── slf4j-api.license
+    ├── slf4j-simple-1.7.5.jar
+    ├── slf4j-simple.license
+    ├── wagon-file-2.4.jar
+    ├── wagon-http-2.4-shaded.jar
+    └── wagon-provider-api-2.4.jar
+</code></pre>
+
+<p><strong>bin目录</strong>，包含了mvn运行的脚本，这些脚本用来配置Java命令，准备好classpath和相关的Java系统属性，然后执行Java命令。其中mvn是基于UNIX平台的shell脚本，mvn.bat是基于Windows平台的bat脚本。在命令行输入任何一条mvn命令时，实际上就是在调用这些脚本。该目录还包含了mvnDebug和mvnDebug.bat两个文件，同样，前者是UNIX平台的shell脚本，后者是windows的bat脚本。那么mvn和mvnDebug有什么区别和关系呢？打开文件我们就可以看到，两者基本是一样的，只是mvnDebug多了一条MAVEN_DEBUG_OPTS配置，作用就是在运行Maven时开启debug，以便调试Maven本身。此外，该目录还包含m2.conf文件，是plexus-classworlds的配置文件。</p>
+
+<p><strong>boot目录</strong>，只包含一个文件，plexus-classworlds是一个类加载器框架，相对于默认的java类加载器，它提供了更丰富的语法以方便配置，Maven使用该框架加载自己的类库。更多classworlds的信息请参考<a href="http://classworlds.codehaus.org/">classworlds</a>，本篇会大篇幅的介绍该框架。</p>
+
+<p><strong>conf目录</strong>，包含了一个非常重要的文件settings.xml。直接修改该文件，就能在机器上全局地定制Maven的行为。一般情况下，我们更偏向于复制该文件至~/.m2/目录下（这里~表示用户目录），然后修改该文件，在用户范围定制Maven的行为。</p>
+
+<p><strong>lib目录</strong>，包含了所有Maven运行时需要的Java类库。</p>
+
+<p><strong>其他文件略</strong>。</p>
+
+<h4>plexus-classworld 是啥？</h4>
+
+<hr />
 ]]></content>
   </entry>
   
