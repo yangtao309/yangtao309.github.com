@@ -139,25 +139,31 @@
   </header>
 
 
-  <div class="entry-content"><h4>Maven 源代码下载</h4>
+  <div class="entry-content"><h4>开篇</h4>
 
-<p>下载地址<a href="https://git-wip-us.apache.org/repos/asf/maven.git">maven source</a> 通过git clone 然后切换到maven-3.1.1</p>
+<hr />
 
-<h4>Maven 安装包(tar.gz|zip)</h4>
+<ul>
+<li><p>Maven 源代码下载</p>
 
-<p>下载地址<a href="http://mirrors.cnnic.cn/apache/maven/maven-3/3.1.1/binaries/apache-maven-3.1.1-bin.zip">apache-maven-3.1.1-bin.zip</a> 将其下载。</p>
+<p>下载地址<a href="https://git-wip-us.apache.org/repos/asf/maven.git">maven source</a> 通过git clone 然后切换到maven-3.1.1</p></li>
+<li><p>Maven 安装包(tar.gz|zip)</p>
 
-<h4>类加载框架plexus-classworlds</h4>
+<p>下载地址<a href="http://mirrors.cnnic.cn/apache/maven/maven-3/3.1.1/binaries/apache-maven-3.1.1-bin.zip">apache-maven-3.1.1-bin.zip</a> 将其下载。</p></li>
+<li><p>类加载框架plexus-classworlds</p>
 
-<p>下载地址<a href="https://github.com/sonatype/plexus-classworlds/tree/plexus-classworlds-2.5.1">plexus-classworlds-2.5.1</a></p>
-
-<h4>代码组织结构</h4>
+<p>下载地址<a href="https://github.com/sonatype/plexus-classworlds/tree/plexus-classworlds-2.5.1">plexus-classworlds-2.5.1</a></p></li>
+<li><p>代码组织结构</p>
 
 <p>图一</p>
 
-<p><img src="/images/01BA59BB-B9F9-437E-B03E-DCD637F180F9.png" alt="Alt text" /></p>
+<p><img src="/images/01BA59BB-B9F9-437E-B03E-DCD637F180F9.png" alt="Alt text" /></p></li>
+</ul>
 
-<h5>Main 函数在哪里？</h5>
+
+<h4>Main 函数在哪里？</h4>
+
+<hr />
 
 <p>我们先看看apache-maven-3.1.1下mvn脚本，源文件在<a href="https://github.com/yangtao309/maven-tutorial/blob/master/apache-maven-3.1.1/bin/mvn#L185">mvn</a></p>
 
@@ -316,7 +322,7 @@
 
 <p>标记2处，反射调用MavenCli.main()，去执行mvn相关的命令。</p>
 
-<p>下一篇文章主要介绍plexus-classworlds是怎么来解析配置并调用指定主函数的？<a href="/blog/2014/11/14/mavenyuan-ma-fen-xi-2/">Maven 源码分析之第二篇</a></p>
+<p>下一篇文章主要介绍plexus-classworlds是怎么来解析配置并调用指定主函数的？<a href="/blog/2014/11/14/mavenyuan-ma-fen-xi-2/">Maven 源码分析 (二)</a></p>
 </div>
   
   
